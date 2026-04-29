@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Drawing Alive!</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- SCREEN 1: Title / Background Selection -->
+    <div id="screen-title" class="screen active">
+      <h1 class="title">Drawing Alive!</h1>
+      <p class="subtitle">Pick a world for your drawings to explore!</p>
+      <div id="bg-gallery" class="gallery"></div>
+    </div>
+
+    <!-- SCREEN 2: Game View -->
+    <div id="screen-game" class="screen">
+      <canvas id="game-canvas"></canvas>
+      <div id="game-ui">
+        <button id="btn-scan" class="btn btn-scan" title="Scan a drawing">
+          <span class="btn-icon">&#x1F4F7;</span>
+          <span class="btn-label">Scan Drawing</span>
+        </button>
+        <button id="btn-back" class="btn btn-back" title="Change background">
+          <span class="btn-icon">&#x1F30D;</span>
+          <span class="btn-label">Change World</span>
+        </button>
+        <button id="btn-sound" class="btn btn-sound" title="Toggle sound">
+          <span class="btn-icon" id="sound-icon">&#x1F50A;</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- MODAL: Webcam Capture -->
+    <div id="modal-webcam" class="modal hidden">
+      <div class="modal-content">
+        <h2>Show your drawing!</h2>
+        <p>Hold your drawing in front of the camera and press <strong>Snap!</strong></p>
+        <div class="webcam-container">
+          <video id="webcam-video" autoplay playsinline></video>
+          <canvas id="webcam-preview" class="hidden"></canvas>
+        </div>
+        <div class="modal-actions">
+          <button id="btn-snap" class="btn btn-snap">Snap!</button>
+          <button id="btn-retake" class="btn btn-retake hidden">Try Again</button>
+          <button id="btn-use" class="btn btn-use hidden">Add to World!</button>
+          <button id="btn-cancel-cam" class="btn btn-cancel">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
