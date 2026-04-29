@@ -178,25 +178,35 @@ async function analyzeDrawing(photoCanvas, apiKey, config) {
       messages: [
         {
           role: 'system',
-          content: `You are helping a children's game. A child has drawn something on paper and photographed it. 
-Describe ONLY what the child drew (the subject), in a short phrase suitable as an image generation prompt.
-Focus on: what animal/creature/object it is, its colors, any distinctive features.
-Keep it to 1-2 sentences. Be specific but concise.
+          content: `You are helping a children's game where a child's drawing is brought to life. A child has drawn something on paper and photographed it.
+
+Your job is to describe the drawing in PRECISE VISUAL DETAIL so that an image generator can recreate something that looks like the SAME drawing, not a generic version.
+
+Describe:
+1. What it is (animal, creature, person, object)
+2. The EXACT colors the child used (e.g. "drawn with red and blue crayon", "black marker outline with green colored pencil fill")
+3. The drawing STYLE — is it wobbly, scribbly, stick-figure-like, carefully colored, messy, simple, detailed?
+4. Specific quirks that make this drawing UNIQUE — oversized head, tiny legs, big round eyes, crooked smile, spiky hair, long neck, missing features, extra features, etc.
+5. Proportions — is the body round/tall/thin? Are the legs long or short relative to the body?
+
+Keep it to 2-4 sentences. Be VERY specific about what makes THIS particular drawing look the way it does.
+
 Example outputs:
-- "A green turtle with a big smile and a spotted shell"
-- "A purple dinosaur with tiny arms and sharp teeth"
-- "A yellow cat with stripes and a long curly tail"
+- "A cat drawn in wobbly black marker with a very round body, pointy triangle ears, long whiskers sticking out sideways, and a curly tail. It has big round green eyes and a wide smile. The legs are very short compared to the large round body."
+- "A dinosaur drawn in green and purple crayon with a huge head, tiny stick arms, and a row of red triangular spikes along its back. It has a big toothy grin with individual teeth drawn as zigzag lines."
+- "A simple stick-figure bird drawn in blue pen with a round body, two lines for legs, and large spread-out wings. It has a small orange beak drawn as a triangle."
+
 If you cannot identify any drawing, respond with "${FALLBACK_DESCRIPTION}".`,
       },
       {
         role: 'user',
         content: [
-          { type: 'text', text: 'What did the child draw? Describe it briefly.' },
+          { type: 'text', text: 'Describe this child\'s drawing in precise visual detail. Focus on what makes it look unique — the colors, style, proportions, and quirky features of THIS specific drawing.' },
           { type: 'image_url', image_url: { url: dataUrl } },
         ],
       },
     ],
-    max_tokens: 100,
+    max_tokens: 250,
     temperature: 0.3,
   });
 
@@ -208,11 +218,18 @@ If you cannot identify any drawing, respond with "${FALLBACK_DESCRIPTION}".`,
    ========================================================= */
 
 async function generateSprite(description, apiKey, config) {
-  const prompt = `A single cute cartoon character: ${description}. 
-Full body view, facing slightly to the right, standing upright. 
-Simple, colorful, child-friendly cartoon style with bold outlines. 
-The character should look like it belongs in a children's picture book.
-No background, no ground, no shadows, no extra objects. Just the character.`;
+  const prompt = `Recreate this child's hand-drawn character as a clean digital version that CLOSELY RESEMBLES the original drawing:
+
+${description}
+
+CRITICAL RULES:
+- Keep the SAME colors, proportions, and quirky features as described — do NOT "fix" or "improve" the drawing
+- If the original has a huge head and tiny legs, keep the huge head and tiny legs
+- If the original is wobbly and simple, make it look like a cleaned-up version of a wobbly simple drawing, NOT a professional cartoon
+- Preserve the charm and personality of a child's drawing
+- The result should look like a polished version of the SAME character the child drew, so the child immediately recognizes it as their own creation
+- Full body view, standing upright
+- No background, no ground, no shadows, no extra objects — just the character`;
 
   if (config.imageModel === 'gpt-image-1') {
     try {
