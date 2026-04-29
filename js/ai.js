@@ -13,6 +13,7 @@
  */
 
 const STORAGE_PREFIX = 'drawing-alive-';
+const FALLBACK_DESCRIPTION = 'a friendly colorful creature';
 
 const PROVIDERS = {
   openai: {
@@ -307,6 +308,14 @@ async function generateWithDalle3(prompt, apiKey, config) {
 /* =========================================================
    Utilities
    ========================================================= */
+
+function sanitizeDescription(description) {
+  return description
+    ?.replace(/[\u0000-\u001f\u007f]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 500);
+}
 
 function loadBase64Image(dataUrl) {
   return new Promise((resolve, reject) => {
