@@ -13,13 +13,15 @@ You can scan as many drawings as you like — they all share the same world!
 
 ## Features
 
+- **AI-Powered Drawing Recognition** — GPT-4o Vision analyzes photos of drawings, then GPT Image generates clean cartoon character sprites (requires OpenAI API key)
+- **Fallback Mode** — Works without an API key using basic pixel-based background removal
 - 6 procedurally-drawn background scenes with unique ambient sounds
-- Webcam capture with automatic paper-background removal
+- Webcam capture with child-friendly snap-and-go workflow
 - Procedural walking animation (legs, bobbing, wandering behavior)
 - Multiple characters coexisting in the same scene
 - Sound effects (ambient world sounds, spawn sounds, footsteps)
 - Child-friendly UI with large buttons and bright colors
-- Fully client-side — no server or API keys needed
+- Fully client-side — API key stored in browser localStorage only
 - Works on desktop and mobile browsers
 
 ## Running Locally
@@ -38,6 +40,15 @@ npx serve .
 
 Then open `http://localhost:8000` in your browser.
 
+## Setting Up AI Mode
+
+1. Get an API key from [platform.openai.com](https://platform.openai.com/api-keys)
+2. In the game, click the gear icon (settings)
+3. Paste your API key and click Save
+4. That's it! Drawings will now be processed with AI
+
+The API key is stored in your browser's localStorage and only sent to OpenAI's API.
+
 ## Deploying to GitHub Pages
 
 Push to a branch, then enable GitHub Pages in the repository settings pointing to that branch. The site is fully static.
@@ -48,7 +59,8 @@ Push to a branch, then enable GitHub Pages in the repository settings pointing t
 - Canvas 2D API for rendering
 - Web Audio API for procedural sounds
 - MediaDevices API for webcam access
-- Zero external dependencies
+- OpenAI API (GPT-4o-mini Vision + gpt-image-1 / DALL-E 3 fallback)
+- Zero npm dependencies — just static files
 
 ## Tips for Best Results
 

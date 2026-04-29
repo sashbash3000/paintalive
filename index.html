@@ -30,23 +30,52 @@
         <button id="btn-sound" class="btn btn-sound" title="Toggle sound">
           <span class="btn-icon" id="sound-icon">&#x1F50A;</span>
         </button>
+        <button id="btn-settings" class="btn btn-settings" title="Settings">
+          <span class="btn-icon">&#x2699;&#xFE0F;</span>
+        </button>
       </div>
     </div>
 
     <!-- MODAL: Webcam Capture -->
     <div id="modal-webcam" class="modal hidden">
       <div class="modal-content">
-        <h2>Show your drawing!</h2>
-        <p>Hold your drawing in front of the camera and press <strong>Snap!</strong></p>
+        <h2 id="webcam-title">Show your drawing!</h2>
+        <p id="webcam-subtitle">Hold your drawing in front of the camera and press <strong>Snap!</strong></p>
         <div class="webcam-container">
           <video id="webcam-video" autoplay playsinline></video>
           <canvas id="webcam-preview" class="hidden"></canvas>
+          <div id="ai-loading" class="ai-loading hidden">
+            <div class="spinner"></div>
+            <p id="ai-status">Looking at your drawing...</p>
+          </div>
+          <div id="ai-result" class="ai-result hidden">
+            <canvas id="ai-sprite-preview"></canvas>
+          </div>
         </div>
         <div class="modal-actions">
           <button id="btn-snap" class="btn btn-snap">Snap!</button>
           <button id="btn-retake" class="btn btn-retake hidden">Try Again</button>
           <button id="btn-use" class="btn btn-use hidden">Add to World!</button>
           <button id="btn-cancel-cam" class="btn btn-cancel">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: Settings (API Key) -->
+    <div id="modal-settings" class="modal hidden">
+      <div class="modal-content settings-content">
+        <h2>&#x2699;&#xFE0F; Settings</h2>
+        <p class="settings-desc">To bring drawings to life with AI, enter an <strong>OpenAI API key</strong>.<br>
+        This is stored only in your browser and never sent anywhere except OpenAI.</p>
+        <div class="input-group">
+          <label for="input-api-key">API Key</label>
+          <input id="input-api-key" type="password" placeholder="sk-..." autocomplete="off" spellcheck="false" />
+        </div>
+        <div id="key-status" class="key-status"></div>
+        <p class="settings-note">Without an API key, drawings will use basic image detection instead of AI.</p>
+        <div class="modal-actions">
+          <button id="btn-save-key" class="btn btn-use">Save</button>
+          <button id="btn-close-settings" class="btn btn-cancel">Close</button>
         </div>
       </div>
     </div>
