@@ -54,6 +54,10 @@
         </div>
         <div class="modal-actions">
           <button id="btn-snap" class="btn btn-snap">Snap!</button>
+          <label id="btn-upload" class="btn btn-upload" tabindex="0">
+            <span class="btn-icon">&#x1F4C1;</span> Upload Image
+            <input id="file-input" type="file" accept="image/*" hidden />
+          </label>
           <button id="btn-retake" class="btn btn-retake hidden">Try Again</button>
           <button id="btn-use" class="btn btn-use hidden">Add to World!</button>
           <button id="btn-cancel-cam" class="btn btn-cancel">Cancel</button>
@@ -61,18 +65,43 @@
       </div>
     </div>
 
-    <!-- MODAL: Settings (API Key) -->
+    <!-- MODAL: Settings (API Provider) -->
     <div id="modal-settings" class="modal hidden">
       <div class="modal-content settings-content">
         <h2>&#x2699;&#xFE0F; Settings</h2>
-        <p class="settings-desc">To bring drawings to life with AI, enter an <strong>OpenAI API key</strong>.<br>
-        This is stored only in your browser and never sent anywhere except OpenAI.</p>
+        <p class="settings-desc">Connect an AI service to bring drawings to life!<br>
+        Your key is stored only in your browser.</p>
+
+        <div class="input-group">
+          <label for="select-provider">AI Provider</label>
+          <select id="select-provider">
+            <option value="openai">OpenAI</option>
+            <option value="openrouter">OpenRouter (many models, one key)</option>
+            <option value="custom">Custom OpenAI-compatible API</option>
+          </select>
+        </div>
+
+        <div id="custom-fields" class="custom-fields hidden">
+          <div class="input-group">
+            <label for="input-base-url">Base URL</label>
+            <input id="input-base-url" type="url" placeholder="https://api.example.com/v1" autocomplete="off" spellcheck="false" />
+          </div>
+          <div class="input-group">
+            <label for="input-vision-model">Vision Model Name</label>
+            <input id="input-vision-model" type="text" placeholder="gpt-4o-mini" autocomplete="off" spellcheck="false" />
+          </div>
+        </div>
+
         <div class="input-group">
           <label for="input-api-key">API Key</label>
           <input id="input-api-key" type="password" placeholder="sk-..." autocomplete="off" spellcheck="false" />
         </div>
+
         <div id="key-status" class="key-status"></div>
-        <p class="settings-note">Without an API key, drawings will use basic image detection instead of AI.</p>
+
+        <div class="provider-info" id="provider-info"></div>
+
+        <p class="settings-note">Without an API key, drawings use basic image detection (works best with dark markers on white paper).</p>
         <div class="modal-actions">
           <button id="btn-save-key" class="btn btn-use">Save</button>
           <button id="btn-close-settings" class="btn btn-cancel">Close</button>

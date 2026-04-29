@@ -1,65 +1,180 @@
 /**
- * AI module: uses OpenAI APIs to interpret a child's drawing
+ * AI module: uses an OpenAI-compatible API to interpret a child's drawing
  * and generate a clean cartoon sprite from it.
  *
+ * Supports multiple providers:
+ * - OpenAI (default)
+ * - OpenRouter (access to many models with one key)
+ * - Any OpenAI-compatible API (custom base URL)
+ *
  * Pipeline:
- * 1. GPT-4o-mini Vision → analyze the webcam photo, describe what was drawn
- * 2. GPT Image (gpt-image-1) → generate a clean cartoon character with transparent background
+ * 1. Vision model → analyze the webcam photo, describe what was drawn
+ * 2. Image generation model → generate a clean cartoon character sprite
  */
 
-const VISION_MODEL = 'gpt-4o-mini';
-const IMAGE_MODEL = 'gpt-image-1';
-const IMAGE_FALLBACK_MODEL = 'dall-e-3';
+const STORAGE_PREFIX = 'drawing-alive-';
 
-const STORAGE_KEY = 'drawing-alive-api-key';
+const PROVIDERS = {
+  openai: {
+    name: 'OpenAI',
+    baseUrl: 'https://api.openai.com/v1',
+    visionModel: 'gpt-4o-mini',
+    imageModel: 'gpt-image-1',
+    imageFallbackModel: 'dall-e-3',
+    keyPrefix: 'sk-',
+    keyPlaceholder: 'sk-...',
+    supportsTransparentBg: true,
+    authHeader: (key) => `Bearer ${key}`,
+    extraHeaders: () => ({}),
+  },
+  openrouter: {
+    name: 'OpenRouter',
+    baseUrl: 'https://openrouter.ai/api/v1',
+    visionModel: 'google/gemini-2.0-flash-001',
+    imageModel: null,
+    imageFallbackModel: null,
+    keyPrefix: 'sk-',
+    keyPlaceholder: 'sk-or-v1-...',
+    supportsTransparentBg: false,
+    authHeader: (key) => `Bearer ${key}`,
+    extraHeaders: () => ({
+      'HTTP-Referer': window.location.origin,
+      'X-Title': 'Drawing Alive!',
+    }),
+  },
+  custom: {
+    name: 'Custom API',
+    baseUrl: '',
+    visionModel: '',
+    imageModel: null,
+    imageFallbackModel: null,
+    keyPrefix: '',
+    keyPlaceholder: 'your-api-key',
+    supportsTransparentBg: false,
+    authHeader: (key) => `Bearer ${key}`,
+    extraHeaders: () => ({}),
+  },
+};
 
-export function getApiKey() {
-  return localStorage.getItem(STORAGE_KEY) || '';
+export function getProviders() {
+  return Object.entries(PROVIDERS).map(([id, p]) => ({ id, name: p.name }));
 }
 
-export function setApiKey(key) {
-  if (key) {
-    localStorage.setItem(STORAGE_KEY, key.trim());
+/* =========================================================
+   Settings persistence
+   ========================================================= */
+
+function store(key, value) {
+  if (value != null && value !== '') {
+    localStorage.setItem(STORAGE_PREFIX + key, String(value));
   } else {
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(STORAGE_PREFIX + key);
   }
 }
 
-export function hasApiKey() {
-  return getApiKey().length > 10;
+function load(key) {
+  return localStorage.getItem(STORAGE_PREFIX + key) || '';
 }
+
+export function getProvider() {
+  return load('provider') || 'openai';
+}
+export function setProvider(id) {
+  store('provider', id);
+}
+
+export function getApiKey() {
+  return load('api-key');
+}
+export function setApiKey(key) {
+  store('api-key', key?.trim());
+}
+
+export function getCustomBaseUrl() {
+  return load('custom-base-url');
+}
+export function setCustomBaseUrl(url) {
+  store('custom-base-url', url?.trim());
+}
+
+export function getCustomVisionModel() {
+  return load('custom-vision-model');
+}
+export function setCustomVisionModel(m) {
+  store('custom-vision-model', m?.trim());
+}
+
+export function hasApiKey() {
+  return getApiKey().length > 5;
+}
+
+function getProviderConfig() {
+  const id = getProvider();
+  const base = { ...PROVIDERS[id] } || { ...PROVIDERS.openai };
+
+  if (id === 'custom') {
+    base.baseUrl = getCustomBaseUrl() || base.baseUrl;
+    base.visionModel = getCustomVisionModel() || base.visionModel;
+  }
+
+  return base;
+}
+
+/* =========================================================
+   Main pipeline
+   ========================================================= */
 
 /**
  * Full pipeline: photo → description → generated sprite canvas.
+ * When image generation is not available for the provider, the vision
+ * description is used to enhance the extracted drawing instead.
  * Calls onStatus(message) with progress updates.
- * Returns a canvas element with the generated character, or null on failure.
+ * Returns { spriteCanvas, description }.
  */
 export async function processDrawing(photoCanvas, onStatus) {
   const apiKey = getApiKey();
   if (!apiKey) throw new Error('No API key configured');
 
+  const config = getProviderConfig();
+
   // Step 1: analyze the drawing with vision
   onStatus('Looking at your drawing...');
-  const description = await analyzeDrawing(photoCanvas, apiKey);
+  const description = await analyzeDrawing(photoCanvas, apiKey, config);
 
-  // Step 2: generate a clean character sprite
-  onStatus('Bringing it to life...');
-  const spriteCanvas = await generateSprite(description, apiKey);
+  // Step 2: generate a clean character sprite (if provider supports image gen)
+  let spriteCanvas = null;
 
-  return spriteCanvas;
+  if (config.imageModel) {
+    onStatus('Bringing it to life...');
+    try {
+      spriteCanvas = await generateSprite(description, apiKey, config);
+    } catch (e) {
+      console.warn('Image generation failed:', e.message);
+      // Fall through — will return null spriteCanvas, caller handles fallback
+    }
+  }
+
+  return { spriteCanvas, description };
 }
 
-async function analyzeDrawing(photoCanvas, apiKey) {
+/* =========================================================
+   Vision analysis
+   ========================================================= */
+
+async function analyzeDrawing(photoCanvas, apiKey, config) {
   const dataUrl = photoCanvas.toDataURL('image/jpeg', 0.8);
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': config.authHeader(apiKey),
+    ...config.extraHeaders(),
+  };
+
+  const response = await fetch(`${config.baseUrl}/chat/completions`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
+    headers,
     body: JSON.stringify({
-      model: VISION_MODEL,
+      model: config.visionModel,
       messages: [
         {
           role: 'system',
@@ -95,31 +210,44 @@ If you cannot identify any drawing, respond with "a friendly colorful creature".
   return data.choices?.[0]?.message?.content?.trim() || 'a friendly colorful creature';
 }
 
-async function generateSprite(description, apiKey) {
+/* =========================================================
+   Image generation (OpenAI only for now)
+   ========================================================= */
+
+async function generateSprite(description, apiKey, config) {
   const prompt = `A single cute cartoon character: ${description}. 
 Full body view, facing slightly to the right, standing upright. 
 Simple, colorful, child-friendly cartoon style with bold outlines. 
 The character should look like it belongs in a children's picture book.
 No background, no ground, no shadows, no extra objects. Just the character.`;
 
-  // Try gpt-image-1 first (supports transparent background)
-  try {
-    return await generateWithGptImage(prompt, apiKey);
-  } catch (e) {
-    console.warn('gpt-image-1 failed, trying dall-e-3 fallback:', e.message);
-    return await generateWithDalle3(prompt, apiKey);
+  if (config.imageModel === 'gpt-image-1') {
+    try {
+      return await generateWithGptImage(prompt, apiKey, config);
+    } catch (e) {
+      console.warn('gpt-image-1 failed, trying dall-e-3 fallback:', e.message);
+      if (config.imageFallbackModel) {
+        return await generateWithDalle3(prompt, apiKey, config);
+      }
+      throw e;
+    }
+  } else if (config.imageModel) {
+    return await generateWithDalle3(prompt, apiKey, config);
   }
+
+  throw new Error('No image generation model configured for this provider');
 }
 
-async function generateWithGptImage(prompt, apiKey) {
-  const response = await fetch('https://api.openai.com/v1/images/generations', {
+async function generateWithGptImage(prompt, apiKey, config) {
+  const response = await fetch(`${config.baseUrl}/images/generations`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
+      'Authorization': config.authHeader(apiKey),
+      ...config.extraHeaders(),
     },
     body: JSON.stringify({
-      model: IMAGE_MODEL,
+      model: 'gpt-image-1',
       prompt,
       n: 1,
       size: '1024x1024',
@@ -140,15 +268,17 @@ async function generateWithGptImage(prompt, apiKey) {
   return await loadBase64Image(`data:image/png;base64,${b64}`);
 }
 
-async function generateWithDalle3(prompt, apiKey) {
-  const response = await fetch('https://api.openai.com/v1/images/generations', {
+async function generateWithDalle3(prompt, apiKey, config) {
+  const model = config.imageFallbackModel || config.imageModel;
+  const response = await fetch(`${config.baseUrl}/images/generations`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
+      'Authorization': config.authHeader(apiKey),
+      ...config.extraHeaders(),
     },
     body: JSON.stringify({
-      model: IMAGE_FALLBACK_MODEL,
+      model,
       prompt: prompt + ' White background.',
       n: 1,
       size: '1024x1024',
@@ -158,7 +288,7 @@ async function generateWithDalle3(prompt, apiKey) {
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
-    throw new Error(err.error?.message || `DALL-E API error: ${response.status}`);
+    throw new Error(err.error?.message || `Image API error: ${response.status}`);
   }
 
   const data = await response.json();
@@ -166,11 +296,13 @@ async function generateWithDalle3(prompt, apiKey) {
   if (!b64) throw new Error('No image data returned');
 
   const canvas = await loadBase64Image(`data:image/png;base64,${b64}`);
-
-  // Remove white background since DALL-E 3 doesn't support transparency
   removeWhiteBackground(canvas);
   return canvas;
 }
+
+/* =========================================================
+   Utilities
+   ========================================================= */
 
 function loadBase64Image(dataUrl) {
   return new Promise((resolve, reject) => {
@@ -207,7 +339,6 @@ function removeWhiteBackground(canvas) {
  * and crop to the visible (non-transparent) bounding box.
  */
 export function prepareSprite(canvas, maxSize = 150) {
-  // Find bounding box of non-transparent pixels
   const ctx = canvas.getContext('2d');
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
   const data = imageData.data;

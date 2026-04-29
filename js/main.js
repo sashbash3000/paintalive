@@ -7,7 +7,13 @@ import { startCamera, captureFrame, stopCamera } from './webcam.js';
 import { extractCharacter } from './extractor.js';
 import { initGame, setBackground, addCharacter, start, stop, clearCharacters } from './game.js';
 import { startAmbient, stopAmbient, toggleMute, playSpawnSound } from './audio.js';
-import { hasApiKey, getApiKey, setApiKey, processDrawing, prepareSprite } from './ai.js';
+import {
+  hasApiKey, getApiKey, setApiKey,
+  getProvider, setProvider, getProviders,
+  getCustomBaseUrl, setCustomBaseUrl,
+  getCustomVisionModel, setCustomVisionModel,
+  processDrawing, prepareSprite,
+} from './ai.js';
 
 /* ---- DOM refs ---- */
 const screenTitle     = document.getElementById('screen-title');
@@ -30,15 +36,22 @@ const btnSound        = document.getElementById('btn-sound');
 const soundIcon       = document.getElementById('sound-icon');
 const btnSettings     = document.getElementById('btn-settings');
 const btnSnap         = document.getElementById('btn-snap');
+const btnUpload       = document.getElementById('btn-upload');
+const fileInput       = document.getElementById('file-input');
 const btnRetake       = document.getElementById('btn-retake');
 const btnUse          = document.getElementById('btn-use');
 const btnCancel       = document.getElementById('btn-cancel-cam');
 
-const modalSettings   = document.getElementById('modal-settings');
-const inputApiKey     = document.getElementById('input-api-key');
-const keyStatus       = document.getElementById('key-status');
-const btnSaveKey      = document.getElementById('btn-save-key');
-const btnCloseSettings = document.getElementById('btn-close-settings');
+const modalSettings     = document.getElementById('modal-settings');
+const selectProvider    = document.getElementById('select-provider');
+const customFields      = document.getElementById('custom-fields');
+const inputBaseUrl      = document.getElementById('input-base-url');
+const inputVisionModel  = document.getElementById('input-vision-model');
+const inputApiKey       = document.getElementById('input-api-key');
+const keyStatus         = document.getElementById('key-status');
+const providerInfo      = document.getElementById('provider-info');
+const btnSaveKey        = document.getElementById('btn-save-key');
+const btnCloseSettings  = document.getElementById('btn-close-settings');
 
 let currentBgId = null;
 let capturedCanvas = null;
@@ -112,9 +125,22 @@ function goBackToGallery() {
    Settings modal
    ========================================================= */
 
+const PROVIDER_HINTS = {
+  openai: 'Get a key at <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a>. Supports vision analysis + AI image generation (best quality).',
+  openrouter: 'Get a key at <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai</a>. Uses Gemini Flash for vision. Drawing is extracted from the photo (no AI image generation).',
+  custom: 'Enter any OpenAI-compatible API endpoint. Must support vision (image input in chat completions).',
+};
+
 function openSettings() {
   modalSettings.classList.remove('hidden');
+
+  selectProvider.value = getProvider();
   inputApiKey.value = getApiKey();
+  inputBaseUrl.value = getCustomBaseUrl();
+  inputVisionModel.value = getCustomVisionModel();
+
+  updateProviderUI();
+
   keyStatus.textContent = '';
   keyStatus.className = 'key-status';
   if (hasApiKey()) {
@@ -127,16 +153,38 @@ function closeSettings() {
   modalSettings.classList.add('hidden');
 }
 
+function updateProviderUI() {
+  const id = selectProvider.value;
+  customFields.classList.toggle('hidden', id !== 'custom');
+  providerInfo.innerHTML = PROVIDER_HINTS[id] || '';
+
+  // Update placeholder
+  const placeholders = { openai: 'sk-...', openrouter: 'sk-or-v1-...', custom: 'your-api-key' };
+  inputApiKey.placeholder = placeholders[id] || 'api-key';
+}
+
+selectProvider.addEventListener('change', updateProviderUI);
+
 btnSaveKey.addEventListener('click', () => {
+  const providerId = selectProvider.value;
   const key = inputApiKey.value.trim();
-  if (key && !key.startsWith('sk-')) {
-    keyStatus.textContent = 'API key should start with sk-';
-    keyStatus.className = 'key-status error';
-    return;
-  }
+
+  setProvider(providerId);
   setApiKey(key);
+
+  if (providerId === 'custom') {
+    setCustomBaseUrl(inputBaseUrl.value);
+    setCustomVisionModel(inputVisionModel.value);
+
+    if (!inputBaseUrl.value.trim()) {
+      keyStatus.textContent = 'Please enter a base URL for your custom API';
+      keyStatus.className = 'key-status error';
+      return;
+    }
+  }
+
   if (key) {
-    keyStatus.textContent = 'Saved! AI mode is now active';
+    keyStatus.textContent = 'Saved! AI mode is active';
     keyStatus.className = 'key-status success';
   } else {
     keyStatus.textContent = 'Key removed. Using basic detection mode.';
@@ -152,8 +200,9 @@ btnCloseSettings.addEventListener('click', closeSettings);
 
 function resetWebcamUI() {
   webcamTitle.textContent = 'Show your drawing!';
-  webcamSubtitle.innerHTML = 'Hold your drawing in front of the camera and press <strong>Snap!</strong>';
+  webcamSubtitle.innerHTML = 'Hold your drawing in front of the camera and press <strong>Snap!</strong>, or upload an image.';
   btnSnap.classList.remove('hidden');
+  btnUpload.classList.remove('hidden');
   btnRetake.classList.add('hidden');
   btnUse.classList.add('hidden');
   webcamPreview.classList.add('hidden');
@@ -172,8 +221,10 @@ async function openWebcam() {
   try {
     await startCamera();
   } catch {
-    alert('Could not access the camera. Please allow camera access and try again.');
-    closeWebcam();
+    // Camera not available — hide snap, keep upload
+    webcamSubtitle.innerHTML = 'Camera not available. You can <strong>upload an image</strong> of your drawing instead!';
+    btnSnap.classList.add('hidden');
+    webcamVideo.classList.add('hidden');
   }
 }
 
@@ -183,28 +234,63 @@ function closeWebcam() {
   processing = false;
 }
 
-btnSnap.addEventListener('click', async () => {
-  capturedCanvas = captureFrame();
+async function handleCapturedImage(canvas) {
+  capturedCanvas = canvas;
 
-  // Show preview of the photo
+  // Show preview
   const previewCtx = webcamPreview.getContext('2d');
-  webcamPreview.width = capturedCanvas.width;
-  webcamPreview.height = capturedCanvas.height;
-  previewCtx.drawImage(capturedCanvas, 0, 0);
+  webcamPreview.width = canvas.width;
+  webcamPreview.height = canvas.height;
+  previewCtx.drawImage(canvas, 0, 0);
 
   webcamVideo.classList.add('hidden');
   webcamPreview.classList.remove('hidden');
   btnSnap.classList.add('hidden');
+  btnUpload.classList.add('hidden');
 
   if (hasApiKey()) {
-    // AI mode: automatically process
     await runAiPipeline();
   } else {
-    // Fallback: basic extraction, show retake/use buttons
+    // Fallback: basic extraction
+    pendingSpriteCanvas = extractCharacter(canvas);
     btnRetake.classList.remove('hidden');
-    btnUse.classList.remove('hidden');
-    btnUse.textContent = 'Add to World!';
+    if (pendingSpriteCanvas) {
+      btnUse.classList.remove('hidden');
+      btnUse.textContent = 'Add to World!';
+    } else {
+      webcamSubtitle.textContent = 'Could not detect a drawing. Try a darker pen on white paper, or set up AI in settings!';
+    }
   }
+}
+
+btnSnap.addEventListener('click', () => {
+  handleCapturedImage(captureFrame());
+});
+
+// File upload handler
+fileInput.addEventListener('change', (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  const img = new Image();
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    const maxDim = 800;
+    let w = img.width, h = img.height;
+    if (w > maxDim || h > maxDim) {
+      const scale = Math.min(maxDim / w, maxDim / h);
+      w = Math.round(w * scale);
+      h = Math.round(h * scale);
+    }
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, w, h);
+    handleCapturedImage(canvas);
+    URL.revokeObjectURL(img.src);
+  };
+  img.src = URL.createObjectURL(file);
+  fileInput.value = '';
 });
 
 async function runAiPipeline() {
@@ -218,18 +304,27 @@ async function runAiPipeline() {
   btnUse.classList.add('hidden');
 
   try {
-    const spriteCanvas = await processDrawing(capturedCanvas, (msg) => {
+    const result = await processDrawing(capturedCanvas, (msg) => {
       aiStatus.textContent = msg;
     });
 
-    if (!spriteCanvas) {
-      throw new Error('Could not generate a character');
+    let sprite = result.spriteCanvas;
+
+    if (sprite) {
+      // AI generated a full sprite image
+      pendingSpriteCanvas = prepareSprite(sprite, 150);
+    } else {
+      // Vision-only provider: use improved extractor on the original photo
+      // The AI described it but couldn't generate an image
+      aiStatus.textContent = 'Extracting your drawing...';
+      pendingSpriteCanvas = extractCharacter(capturedCanvas);
     }
 
-    // Scale and crop the sprite
-    pendingSpriteCanvas = prepareSprite(spriteCanvas, 150);
+    if (!pendingSpriteCanvas) {
+      throw new Error('Could not extract a character from the image');
+    }
 
-    // Show the AI result preview
+    // Show result preview
     aiLoading.classList.add('hidden');
     webcamPreview.classList.add('hidden');
     aiResult.classList.remove('hidden');
@@ -241,30 +336,32 @@ async function runAiPipeline() {
     previewCtx.drawImage(pendingSpriteCanvas, 0, 0);
 
     webcamTitle.textContent = 'Your creature is ready!';
-    webcamSubtitle.textContent = 'Add it to your world or try another drawing.';
+    webcamSubtitle.textContent = result.spriteCanvas
+      ? 'AI created this character from your drawing!'
+      : `AI sees: "${result.description}" — extracted from your photo!`;
 
     btnRetake.classList.remove('hidden');
     btnUse.classList.remove('hidden');
     btnUse.textContent = 'Add to World!';
+
   } catch (err) {
     console.error('AI pipeline error:', err);
     aiLoading.classList.add('hidden');
-    webcamTitle.textContent = 'Oops!';
-    webcamSubtitle.textContent = err.message || 'Something went wrong. Try again!';
 
-    // Fall back to basic extraction
+    // Try fallback extraction
     pendingSpriteCanvas = extractCharacter(capturedCanvas);
+
+    webcamTitle.textContent = 'Oops!';
+    webcamSubtitle.textContent = err.message || 'Something went wrong.';
 
     if (pendingSpriteCanvas) {
       webcamPreview.classList.remove('hidden');
-      webcamSubtitle.textContent += ' Using basic detection instead.';
-    }
-
-    btnRetake.classList.remove('hidden');
-    if (pendingSpriteCanvas) {
+      webcamSubtitle.textContent += ' Used basic detection instead.';
       btnUse.classList.remove('hidden');
       btnUse.textContent = 'Add Anyway';
     }
+
+    btnRetake.classList.remove('hidden');
   } finally {
     processing = false;
   }
@@ -275,7 +372,9 @@ btnRetake.addEventListener('click', async () => {
   try {
     await startCamera();
   } catch {
-    // Camera may already be running
+    btnSnap.classList.add('hidden');
+    webcamVideo.classList.add('hidden');
+    webcamSubtitle.innerHTML = 'Camera not available. You can <strong>upload an image</strong> instead!';
   }
 });
 
@@ -312,8 +411,3 @@ document.addEventListener('keydown', e => {
 
 initGame(gameCanvas);
 buildGallery();
-
-// Show a hint if no API key configured
-if (!hasApiKey()) {
-  console.info('Drawing Alive: No API key configured. Click the gear icon to set up AI mode for much better drawing detection!');
-}
