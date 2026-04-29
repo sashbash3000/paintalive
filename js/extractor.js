@@ -36,7 +36,9 @@ export function extractCharacter(sourceCanvas, maxSize = 150) {
   for (let y = 0; y < sh; y++) {
     for (let x = 0; x < sw; x++) {
       const idx = (y * sw + x) * 4;
-      const r = data[idx], g = data[idx + 1], b = data[idx + 2];
+      const r = data[idx],
+        g = data[idx + 1],
+        b = data[idx + 2];
       const dist = colorDistanceLab(r, g, b, bgColor.r, bgColor.g, bgColor.b);
 
       // pixels with low saturation (close to gray/white) get a higher threshold
@@ -53,8 +55,8 @@ export function extractCharacter(sourceCanvas, maxSize = 150) {
   floodFillEdges(mask, sw, sh, data, bgColor, baseThr + satBonus + 15);
 
   // 4. Morphological operations to clean up
-  morphologicalOpen(mask, sw, sh, 2);   // remove small noise specks
-  morphologicalClose(mask, sw, sh, 3);  // fill small gaps in the drawing
+  morphologicalOpen(mask, sw, sh, 2); // remove small noise specks
+  morphologicalClose(mask, sw, sh, 3); // fill small gaps in the drawing
 
   // 5. Remove small disconnected components (noise)
   removeSmallComponents(mask, sw, sh, 80);
@@ -77,7 +79,10 @@ export function extractCharacter(sourceCanvas, maxSize = 150) {
   ctx.putImageData(imageData, 0, 0);
 
   // 7. Find bounding box and crop
-  let minX = sw, minY = sh, maxX = 0, maxY = 0;
+  let minX = sw,
+    minY = sh,
+    maxX = 0,
+    maxY = 0;
   let hasContent = false;
 
   for (let y = 0; y < sh; y++) {
@@ -141,14 +146,17 @@ function sampleBackgroundColor(data, w, h) {
   }
 
   // Use median rather than mean to be robust against outliers
-  samples.sort((a, b) => (a.r + a.g + a.b) - (b.r + b.g + b.b));
+  samples.sort((a, b) => a.r + a.g + a.b - (b.r + b.g + b.b));
   const mid = Math.floor(samples.length / 2);
   const median = samples[mid];
 
   // Average the middle 40% for stability
   const lo = Math.floor(samples.length * 0.3);
   const hi = Math.floor(samples.length * 0.7);
-  let r = 0, g = 0, b = 0, count = 0;
+  let r = 0,
+    g = 0,
+    b = 0,
+    count = 0;
   for (let i = lo; i < hi; i++) {
     r += samples[i].r;
     g += samples[i].g;
@@ -179,7 +187,10 @@ function floodFillEdges(mask, w, h, data, bgColor, threshold) {
     if (!mask[right]) queue.push(right);
   }
 
-  queue.forEach(i => { visited[i] = 1; mask[i] = 0; });
+  queue.forEach((i) => {
+    visited[i] = 1;
+    mask[i] = 0;
+  });
 
   const dx = [-1, 1, 0, 0];
   const dy = [0, 0, -1, 1];
@@ -199,7 +210,9 @@ function floodFillEdges(mask, w, h, data, bgColor, threshold) {
       visited[ni] = 1;
 
       const idx = ni * 4;
-      const r = data[idx], g = data[idx + 1], b = data[idx + 2];
+      const r = data[idx],
+        g = data[idx + 1],
+        b = data[idx + 2];
       const dist = colorDistanceLab(r, g, b, bgColor.r, bgColor.g, bgColor.b);
 
       if (dist < threshold) {
@@ -232,7 +245,8 @@ function erode(mask, w, h, radius) {
       let allSet = true;
       outer: for (let dy = -radius; dy <= radius; dy++) {
         for (let dx = -radius; dx <= radius; dx++) {
-          const nx = x + dx, ny = y + dy;
+          const nx = x + dx,
+            ny = y + dy;
           if (nx < 0 || nx >= w || ny < 0 || ny >= h || !copy[ny * w + nx]) {
             allSet = false;
             break outer;
@@ -252,7 +266,8 @@ function dilate(mask, w, h, radius) {
       let anySet = false;
       for (let dy = -radius; dy <= radius && !anySet; dy++) {
         for (let dx = -radius; dx <= radius && !anySet; dx++) {
-          const nx = x + dx, ny = y + dy;
+          const nx = x + dx,
+            ny = y + dy;
           if (nx >= 0 && nx < w && ny >= 0 && ny < h && copy[ny * w + nx]) {
             anySet = true;
           }
@@ -289,8 +304,14 @@ function removeSmallComponents(mask, w, h, minSize) {
         const cx = ci % w;
         const cy = (ci - cx) / w;
 
-        for (const [dx, dy] of [[-1,0],[1,0],[0,-1],[0,1]]) {
-          const nx = cx + dx, ny = cy + dy;
+        for (const [dx, dy] of [
+          [-1, 0],
+          [1, 0],
+          [0, -1],
+          [0, 1],
+        ]) {
+          const nx = cx + dx,
+            ny = cy + dy;
           if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
           const ni = ny * w + nx;
           if (mask[ni] && !labels[ni]) {
@@ -326,7 +347,8 @@ function computeFeatherMap(mask, w, h, radius) {
       let minDist = radius + 1;
       for (let dy = -radius; dy <= radius; dy++) {
         for (let dx = -radius; dx <= radius; dx++) {
-          const nx = x + dx, ny = y + dy;
+          const nx = x + dx,
+            ny = y + dy;
           if (nx < 0 || nx >= w || ny < 0 || ny >= h) {
             const d = Math.sqrt(dx * dx + dy * dy);
             if (d < minDist) minDist = d;
@@ -372,9 +394,5 @@ function colorDistanceLab(r1, g1, b1, r2, g2, b2) {
   const dg = g1 - g2;
   const db = b1 - b2;
   // Weighted Euclidean approximation of perceptual color difference
-  return Math.sqrt(
-    (2 + rmean / 256) * dr * dr +
-    4 * dg * dg +
-    (2 + (255 - rmean) / 256) * db * db
-  );
+  return Math.sqrt((2 + rmean / 256) * dr * dr + 4 * dg * dg + (2 + (255 - rmean) / 256) * db * db);
 }

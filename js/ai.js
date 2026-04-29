@@ -167,7 +167,7 @@ async function analyzeDrawing(photoCanvas, apiKey, config) {
 
   const headers = {
     'Content-Type': 'application/json',
-    'Authorization': config.authHeader(apiKey),
+    Authorization: config.authHeader(apiKey),
     ...config.extraHeaders(),
   };
 
@@ -198,17 +198,20 @@ Example outputs:
 - "A simple stick-figure bird drawn in blue pen with a round body, two lines for legs, and large spread-out wings. It has a small orange beak drawn as a triangle."
 
 If you cannot identify any drawing, respond with "${FALLBACK_DESCRIPTION}".`,
-      },
-      {
-        role: 'user',
-        content: [
-          { type: 'text', text: 'Describe this child\'s drawing in precise visual detail. Focus on what makes it look unique — the colors, style, proportions, and quirky features of THIS specific drawing.' },
-          { type: 'image_url', image_url: { url: dataUrl } },
-        ],
-      },
-    ],
-    max_tokens: 250,
-    temperature: 0.3,
+        },
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: "Describe this child's drawing in precise visual detail. Focus on what makes it look unique — the colors, style, proportions, and quirky features of THIS specific drawing.",
+            },
+            { type: 'image_url', image_url: { url: dataUrl } },
+          ],
+        },
+      ],
+      max_tokens: 250,
+      temperature: 0.3,
     }),
   });
 
@@ -261,7 +264,7 @@ async function generateWithGptImage(prompt, apiKey, config) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': config.authHeader(apiKey),
+      Authorization: config.authHeader(apiKey),
       ...config.extraHeaders(),
     },
     body: JSON.stringify({
@@ -292,7 +295,7 @@ async function generateWithDalle3(prompt, apiKey, config) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': config.authHeader(apiKey),
+      Authorization: config.authHeader(apiKey),
       ...config.extraHeaders(),
     },
     body: JSON.stringify({
@@ -371,7 +374,10 @@ export function prepareSprite(canvas, maxSize = 150) {
   const w = canvas.width;
   const h = canvas.height;
 
-  let minX = w, minY = h, maxX = 0, maxY = 0;
+  let minX = w,
+    minY = h,
+    maxX = 0,
+    maxY = 0;
   let hasContent = false;
 
   for (let y = 0; y < h; y++) {

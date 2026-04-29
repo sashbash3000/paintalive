@@ -8,50 +8,57 @@ import { extractCharacter } from './extractor.js';
 import { initGame, setBackground, addCharacter, start, stop, clearCharacters } from './game.js';
 import { startAmbient, stopAmbient, toggleMute, playSpawnSound } from './audio.js';
 import {
-  hasApiKey, getApiKey, setApiKey,
-  getProvider, setProvider, getProviders,
-  getCustomBaseUrl, setCustomBaseUrl,
-  getCustomVisionModel, setCustomVisionModel,
-  processDrawing, prepareSprite,
+  hasApiKey,
+  getApiKey,
+  setApiKey,
+  getProvider,
+  setProvider,
+  getProviders,
+  getCustomBaseUrl,
+  setCustomBaseUrl,
+  getCustomVisionModel,
+  setCustomVisionModel,
+  processDrawing,
+  prepareSprite,
 } from './ai.js';
 
 /* ---- DOM refs ---- */
-const screenTitle     = document.getElementById('screen-title');
-const screenGame      = document.getElementById('screen-game');
-const bgGallery       = document.getElementById('bg-gallery');
-const gameCanvas      = document.getElementById('game-canvas');
+const screenTitle = document.getElementById('screen-title');
+const screenGame = document.getElementById('screen-game');
+const bgGallery = document.getElementById('bg-gallery');
+const gameCanvas = document.getElementById('game-canvas');
 
-const modalWebcam     = document.getElementById('modal-webcam');
-const webcamTitle     = document.getElementById('webcam-title');
-const webcamSubtitle  = document.getElementById('webcam-subtitle');
-const webcamVideo     = document.getElementById('webcam-video');
-const webcamPreview   = document.getElementById('webcam-preview');
-const aiLoading       = document.getElementById('ai-loading');
-const aiStatus        = document.getElementById('ai-status');
-const aiResult        = document.getElementById('ai-result');
+const modalWebcam = document.getElementById('modal-webcam');
+const webcamTitle = document.getElementById('webcam-title');
+const webcamSubtitle = document.getElementById('webcam-subtitle');
+const webcamVideo = document.getElementById('webcam-video');
+const webcamPreview = document.getElementById('webcam-preview');
+const aiLoading = document.getElementById('ai-loading');
+const aiStatus = document.getElementById('ai-status');
+const aiResult = document.getElementById('ai-result');
 const aiSpritePreview = document.getElementById('ai-sprite-preview');
-const btnScan         = document.getElementById('btn-scan');
-const btnBack         = document.getElementById('btn-back');
-const btnSound        = document.getElementById('btn-sound');
-const soundIcon       = document.getElementById('sound-icon');
-const btnSettings     = document.getElementById('btn-settings');
-const btnSnap         = document.getElementById('btn-snap');
-const btnUpload       = document.getElementById('btn-upload');
-const fileInput       = document.getElementById('file-input');
-const btnRetake       = document.getElementById('btn-retake');
-const btnUse          = document.getElementById('btn-use');
-const btnCancel       = document.getElementById('btn-cancel-cam');
+const btnScan = document.getElementById('btn-scan');
+const btnBack = document.getElementById('btn-back');
+const btnSound = document.getElementById('btn-sound');
+const soundIcon = document.getElementById('sound-icon');
+const btnSettings = document.getElementById('btn-settings');
+const btnSnap = document.getElementById('btn-snap');
+const btnUpload = document.getElementById('btn-upload');
+const fileInput = document.getElementById('file-input');
+const btnRetake = document.getElementById('btn-retake');
+const btnUse = document.getElementById('btn-use');
+const btnCancel = document.getElementById('btn-cancel-cam');
 
-const modalSettings     = document.getElementById('modal-settings');
-const selectProvider    = document.getElementById('select-provider');
-const customFields      = document.getElementById('custom-fields');
-const inputBaseUrl      = document.getElementById('input-base-url');
-const inputVisionModel  = document.getElementById('input-vision-model');
-const inputApiKey       = document.getElementById('input-api-key');
-const keyStatus         = document.getElementById('key-status');
-const providerInfo      = document.getElementById('provider-info');
-const btnSaveKey        = document.getElementById('btn-save-key');
-const btnCloseSettings  = document.getElementById('btn-close-settings');
+const modalSettings = document.getElementById('modal-settings');
+const selectProvider = document.getElementById('select-provider');
+const customFields = document.getElementById('custom-fields');
+const inputBaseUrl = document.getElementById('input-base-url');
+const inputVisionModel = document.getElementById('input-vision-model');
+const inputApiKey = document.getElementById('input-api-key');
+const keyStatus = document.getElementById('key-status');
+const providerInfo = document.getElementById('provider-info');
+const btnSaveKey = document.getElementById('btn-save-key');
+const btnCloseSettings = document.getElementById('btn-close-settings');
 
 let currentBgId = null;
 let capturedCanvas = null;
@@ -64,7 +71,7 @@ let processing = false;
 
 function buildGallery() {
   const bgs = getBackgrounds();
-  bgs.forEach(bg => {
+  bgs.forEach((bg) => {
     const item = document.createElement('div');
     item.className = 'gallery-item';
     item.tabIndex = 0;
@@ -84,7 +91,7 @@ function buildGallery() {
     item.appendChild(label);
 
     item.addEventListener('click', () => selectBackground(bg.id));
-    item.addEventListener('keydown', e => {
+    item.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') selectBackground(bg.id);
     });
 
@@ -126,9 +133,12 @@ function goBackToGallery() {
    ========================================================= */
 
 const PROVIDER_HINTS = {
-  openai: 'Get a key at <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a>. Supports vision analysis + AI image generation (best quality).',
-  openrouter: 'Get a key at <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai</a>. Uses Gemini Flash for vision. Drawing is extracted from the photo (no AI image generation).',
-  custom: 'Enter any OpenAI-compatible API endpoint. Must support vision (image input in chat completions).',
+  openai:
+    'Get a key at <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a>. Supports vision analysis + AI image generation (best quality).',
+  openrouter:
+    'Get a key at <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai</a>. Uses Gemini Flash for vision. Drawing is extracted from the photo (no AI image generation).',
+  custom:
+    'Enter any OpenAI-compatible API endpoint. Must support vision (image input in chat completions).',
 };
 
 function openSettings() {
@@ -200,7 +210,8 @@ btnCloseSettings.addEventListener('click', closeSettings);
 
 function resetWebcamUI() {
   webcamTitle.textContent = 'Show your drawing!';
-  webcamSubtitle.innerHTML = 'Hold your drawing in front of the camera and press <strong>Snap!</strong>, or upload an image.';
+  webcamSubtitle.innerHTML =
+    'Hold your drawing in front of the camera and press <strong>Snap!</strong>, or upload an image.';
   btnSnap.classList.remove('hidden');
   btnUpload.classList.remove('hidden');
   btnRetake.classList.add('hidden');
@@ -222,7 +233,8 @@ async function openWebcam() {
     await startCamera();
   } catch {
     // Camera not available — hide snap, keep upload
-    webcamSubtitle.innerHTML = 'Camera not available. You can <strong>upload an image</strong> of your drawing instead!';
+    webcamSubtitle.innerHTML =
+      'Camera not available. You can <strong>upload an image</strong> of your drawing instead!';
     btnSnap.classList.add('hidden');
     webcamVideo.classList.add('hidden');
   }
@@ -258,7 +270,8 @@ async function handleCapturedImage(canvas) {
       btnUse.classList.remove('hidden');
       btnUse.textContent = 'Add to World!';
     } else {
-      webcamSubtitle.textContent = 'Could not detect a drawing. Try a darker pen on white paper, or set up AI in settings!';
+      webcamSubtitle.textContent =
+        'Could not detect a drawing. Try a darker pen on white paper, or set up AI in settings!';
     }
   }
 }
@@ -276,7 +289,8 @@ fileInput.addEventListener('change', (e) => {
   img.onload = () => {
     const canvas = document.createElement('canvas');
     const maxDim = 800;
-    let w = img.width, h = img.height;
+    let w = img.width,
+      h = img.height;
     if (w > maxDim || h > maxDim) {
       const scale = Math.min(maxDim / w, maxDim / h);
       w = Math.round(w * scale);
@@ -343,7 +357,6 @@ async function runAiPipeline() {
     btnRetake.classList.remove('hidden');
     btnUse.classList.remove('hidden');
     btnUse.textContent = 'Add to World!';
-
   } catch (err) {
     console.error('AI pipeline error:', err);
     aiLoading.classList.add('hidden');
@@ -374,7 +387,8 @@ btnRetake.addEventListener('click', async () => {
   } catch {
     btnSnap.classList.add('hidden');
     webcamVideo.classList.add('hidden');
-    webcamSubtitle.innerHTML = 'Camera not available. You can <strong>upload an image</strong> instead!';
+    webcamSubtitle.innerHTML =
+      'Camera not available. You can <strong>upload an image</strong> instead!';
   }
 });
 
@@ -398,7 +412,7 @@ btnUse.addEventListener('click', () => {
 btnCancel.addEventListener('click', closeWebcam);
 
 // close modals on Escape
-document.addEventListener('keydown', e => {
+document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     if (!modalWebcam.classList.contains('hidden')) closeWebcam();
     else if (!modalSettings.classList.contains('hidden')) closeSettings();

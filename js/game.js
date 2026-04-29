@@ -26,7 +26,7 @@ function resizeCanvas() {
   if (bgId) {
     renderBgToCache();
   }
-  characters.forEach(c => c.resize(canvas.width, canvas.height));
+  characters.forEach((c) => c.resize(canvas.width, canvas.height));
 }
 
 function renderBgToCache() {
@@ -53,7 +53,7 @@ export function getCharacterCount() {
 }
 
 export function clearCharacters() {
-  characters.forEach(c => c.destroy());
+  characters.forEach((c) => c.destroy());
   characters = [];
 }
 
@@ -76,7 +76,7 @@ function loop(timestamp) {
   const now = performance.now();
 
   // update characters
-  characters.forEach(c => c.update(dt, now));
+  characters.forEach((c) => c.update(dt, now));
 
   // draw
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -87,10 +87,10 @@ function loop(timestamp) {
   }
 
   // sort characters by Y for depth
-  characters.sort((a, b) => (a.y + a.h) - (b.y + b.h));
+  characters.sort((a, b) => a.y + a.h - (b.y + b.h));
 
   // draw characters
-  characters.forEach(c => c.draw(ctx));
+  characters.forEach((c) => c.draw(ctx));
 
   // HUD: character count
   ctx.save();

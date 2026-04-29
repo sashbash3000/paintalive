@@ -40,21 +40,37 @@ export function startAmbient(bgId) {
   currentAmbientId = bgId;
 
   switch (bgId) {
-    case 'jungle':  ambientJungle(); break;
-    case 'ocean':   ambientOcean();  break;
-    case 'desert':  ambientDesert(); break;
-    case 'arctic':  ambientArctic(); break;
-    case 'space':   ambientSpace();  break;
-    case 'savanna': ambientSavanna(); break;
+    case 'jungle':
+      ambientJungle();
+      break;
+    case 'ocean':
+      ambientOcean();
+      break;
+    case 'desert':
+      ambientDesert();
+      break;
+    case 'arctic':
+      ambientArctic();
+      break;
+    case 'space':
+      ambientSpace();
+      break;
+    case 'savanna':
+      ambientSavanna();
+      break;
   }
 }
 
 export function stopAmbient() {
-  ambientNodes.forEach(n => {
-    try { n.stop?.(); } catch {}
-    try { n.disconnect(); } catch {}
+  ambientNodes.forEach((n) => {
+    try {
+      n.stop?.();
+    } catch {}
+    try {
+      n.disconnect();
+    } catch {}
   });
-  ambientTimers.forEach(timerId => window.clearTimeout(timerId));
+  ambientTimers.forEach((timerId) => window.clearTimeout(timerId));
   ambientNodes = [];
   ambientTimers = [];
   currentAmbientId = null;
@@ -230,7 +246,7 @@ function scheduleCrickets() {
 
 function scheduleAmbientTimer(callback, delay) {
   const timerId = window.setTimeout(() => {
-    ambientTimers = ambientTimers.filter(id => id !== timerId);
+    ambientTimers = ambientTimers.filter((id) => id !== timerId);
     callback();
   }, delay);
   ambientTimers.push(timerId);
