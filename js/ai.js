@@ -7,6 +7,9 @@
  * - OpenRouter (access to many models with one key)
  * - Any OpenAI-compatible API (custom base URL)
  *
+ * GitHub Pages and other static hosts: OpenAI does not send CORS headers for
+ * browser requests. Set an optional API proxy (see workers/README.md) in settings.
+ *
  * Pipeline:
  * 1. Vision model → analyze the webcam photo, describe what was drawn
  * 2. Image generation model → generate a clean cartoon character sprite
@@ -105,6 +108,22 @@ export function setCustomVisionModel(m) {
   store('custom-vision-model', m?.trim());
 }
 
+/** Optional HTTPS origin of the CORS proxy worker (no trailing slash). */
+export function getApiProxyBaseUrl() {
+  return load('api-proxy-base');
+}
+export function setApiProxyBaseUrl(url) {
+  store('api-proxy-base', url?.trim());
+}
+
+/** Optional shared secret for the proxy (header X-Proxy-Secret). */
+export function getApiProxySecret() {
+  return load('api-proxy-secret');
+}
+export function setApiProxySecret(secret) {
+  store('api-proxy-secret', secret?.trim());
+}
+
 export function hasApiKey() {
   return getApiKey().length > 5;
 }
@@ -112,6 +131,7 @@ export function hasApiKey() {
 function getProviderConfig() {
   const id = getProvider();
   const base = { ...PROVIDERS[id] } || { ...PROVIDERS.openai };
+  base.providerId = id;
 
   if (id === 'custom') {
     base.baseUrl = getCustomBaseUrl() || base.baseUrl;
@@ -119,6 +139,39 @@ function getProviderConfig() {
   }
 
   return base;
+}
+
+/**
+ * When an API proxy base URL is set, map the logical OpenAI-compatible URL to the proxy path.
+ * Otherwise return the direct URL (works for localhost or APIs that allow browser CORS).
+ */
+function resolveApiUrl(config, pathAfterV1) {
+  const proxy = getApiProxyBaseUrl().replace(/\/$/, '');
+  if (!proxy) {
+    return `${config.baseUrl}${pathAfterV1}`;
+  }
+
+  const path = pathAfterV1.startsWith('/') ? pathAfterV1 : `/${pathAfterV1}`;
+
+  if (config.providerId === 'openai') {
+    return `${proxy}/v1${path}`;
+  }
+  if (config.providerId === 'openrouter') {
+    return `${proxy}/openrouter${path}`;
+  }
+  if (config.providerId === 'custom') {
+    const base = config.baseUrl.replace(/\/$/, '');
+    const fullUrl = `${base}${path}`;
+    return `${proxy}/custom?target=${encodeURIComponent(fullUrl)}`;
+  }
+
+  return `${config.baseUrl}${path}`;
+}
+
+function proxyHeaders(headers) {
+  const secret = getApiProxySecret();
+  if (!secret) return headers;
+  return { ...headers, 'X-Proxy-Secret': secret };
 }
 
 /* =========================================================
@@ -165,13 +218,13 @@ export async function processDrawing(photoCanvas, onStatus) {
 async function analyzeDrawing(photoCanvas, apiKey, config) {
   const dataUrl = photoCanvas.toDataURL('image/jpeg', 0.8);
 
-  const headers = {
+  const headers = proxyHeaders({
     'Content-Type': 'application/json',
     Authorization: config.authHeader(apiKey),
     ...config.extraHeaders(),
-  };
+  });
 
-  const response = await fetch(`${config.baseUrl}/chat/completions`, {
+  const response = await fetch(resolveApiUrl(config, '/chat/completions'), {
     method: 'POST',
     headers,
     body: JSON.stringify({
@@ -260,13 +313,13 @@ CRITICAL RULES:
 }
 
 async function generateWithGptImage(prompt, apiKey, config) {
-  const response = await fetch(`${config.baseUrl}/images/generations`, {
+  const response = await fetch(resolveApiUrl(config, '/images/generations'), {
     method: 'POST',
-    headers: {
+    headers: proxyHeaders({
       'Content-Type': 'application/json',
       Authorization: config.authHeader(apiKey),
       ...config.extraHeaders(),
-    },
+    }),
     body: JSON.stringify({
       model: 'gpt-image-1',
       prompt,
@@ -291,13 +344,13 @@ async function generateWithGptImage(prompt, apiKey, config) {
 
 async function generateWithDalle3(prompt, apiKey, config) {
   const model = config.imageFallbackModel || config.imageModel;
-  const response = await fetch(`${config.baseUrl}/images/generations`, {
+  const response = await fetch(resolveApiUrl(config, '/images/generations'), {
     method: 'POST',
-    headers: {
+    headers: proxyHeaders({
       'Content-Type': 'application/json',
       Authorization: config.authHeader(apiKey),
       ...config.extraHeaders(),
-    },
+    }),
     body: JSON.stringify({
       model,
       prompt: prompt + ' White background.',
