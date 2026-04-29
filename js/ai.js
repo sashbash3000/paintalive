@@ -193,24 +193,26 @@ Describe:
 Keep it to 2-4 sentences. Be VERY specific about what makes THIS particular drawing look the way it does.
 
 Example outputs:
-- "A cat drawn in wobbly black marker with a very round body, pointy triangle ears, long whiskers sticking out sideways, and a curly tail. It has big round green eyes and a wide smile. The legs are very short compared to the large round body."
-- "A dinosaur drawn in green and purple crayon with a huge head, tiny stick arms, and a row of red triangular spikes along its back. It has a big toothy grin with individual teeth drawn as zigzag lines."
+- "A cat drawn in wobbly black marker with a very round body, pointy triangle ears, long whiskers sticking out sideways, and a curly tail. It has big round green eyes and a wide smile. The legs a[...]
+- "A dinosaur drawn in green and purple crayon with a huge head, tiny stick arms, and a row of red triangular spikes along its back. It has a big toothy grin with individual teeth drawn as zigzag[...]
 - "A simple stick-figure bird drawn in blue pen with a round body, two lines for legs, and large spread-out wings. It has a small orange beak drawn as a triangle."
 
 If you cannot identify any drawing, respond with "${FALLBACK_DESCRIPTION}".`,
-      },
-      {
-        role: 'user',
-        content: [
-          { type: 'text', text: 'Describe this child\'s drawing in precise visual detail. Focus on what makes it look unique — the colors, style, proportions, and quirky features of THIS specific drawing.' },
-          { type: 'image_url', image_url: { url: dataUrl } },
-        ],
-      },
-    ],
-    max_tokens: 250,
-    temperature: 0.3,
+        },
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: 'Describe this child\'s drawing in precise visual detail. Focus on what makes it look unique — the colors, style, proportions, and quirky features of THIS specif[...]
+            { type: 'image_url', image_url: { url: dataUrl } },
+          ],
+        },
+      ],
+      max_tokens: 250,
+      temperature: 0.3,
+    }),
   });
 
+  const data = await response.json();
   return sanitizeDescription(data.choices?.[0]?.message?.content) || FALLBACK_DESCRIPTION;
 }
 
@@ -267,6 +269,7 @@ async function generateWithGptImage(prompt, apiKey, config) {
     }),
   });
 
+  const data = await response.json();
   const b64 = data.data?.[0]?.b64_json;
   if (!b64) throw new Error('No image data returned');
 
