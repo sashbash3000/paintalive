@@ -186,28 +186,21 @@ Example outputs:
 - "A green turtle with a big smile and a spotted shell"
 - "A purple dinosaur with tiny arms and sharp teeth"
 - "A yellow cat with stripes and a long curly tail"
-If you cannot identify any drawing, respond with "a friendly colorful creature".`,
-        },
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: 'What did the child draw? Describe it briefly.' },
-            { type: 'image_url', image_url: { url: dataUrl } },
-          ],
-        },
-      ],
-      max_tokens: 100,
-      temperature: 0.3,
-    }),
+If you cannot identify any drawing, respond with "${FALLBACK_DESCRIPTION}".`,
+      },
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: 'What did the child draw? Describe it briefly.' },
+          { type: 'image_url', image_url: { url: dataUrl } },
+        ],
+      },
+    ],
+    max_tokens: 100,
+    temperature: 0.3,
   });
 
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error?.message || `Vision API error: ${response.status}`);
-  }
-
-  const data = await response.json();
-  return data.choices?.[0]?.message?.content?.trim() || 'a friendly colorful creature';
+  return sanitizeDescription(data.choices?.[0]?.message?.content) || FALLBACK_DESCRIPTION;
 }
 
 /* =========================================================
@@ -256,12 +249,6 @@ async function generateWithGptImage(prompt, apiKey, config) {
     }),
   });
 
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error?.message || `Image API error: ${response.status}`);
-  }
-
-  const data = await response.json();
   const b64 = data.data?.[0]?.b64_json;
   if (!b64) throw new Error('No image data returned');
 

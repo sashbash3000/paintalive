@@ -144,7 +144,7 @@ function openSettings() {
   keyStatus.textContent = '';
   keyStatus.className = 'key-status';
   if (hasApiKey()) {
-    keyStatus.textContent = 'API key is configured';
+    keyStatus.textContent = 'API key is configured for this tab';
     keyStatus.classList.add('success');
   }
 }
