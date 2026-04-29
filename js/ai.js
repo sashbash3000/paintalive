@@ -209,8 +209,15 @@ If you cannot identify any drawing, respond with "${FALLBACK_DESCRIPTION}".`,
     ],
     max_tokens: 250,
     temperature: 0.3,
+    }),
   });
 
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error?.message || `Vision API error: ${response.status}`);
+  }
+
+  const data = await response.json();
   return sanitizeDescription(data.choices?.[0]?.message?.content) || FALLBACK_DESCRIPTION;
 }
 
@@ -267,6 +274,12 @@ async function generateWithGptImage(prompt, apiKey, config) {
     }),
   });
 
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error?.message || `Image API error: ${response.status}`);
+  }
+
+  const data = await response.json();
   const b64 = data.data?.[0]?.b64_json;
   if (!b64) throw new Error('No image data returned');
 
