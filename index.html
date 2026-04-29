@@ -99,6 +99,15 @@
           <input id="input-api-key" type="password" placeholder="sk-..." autocomplete="new-password" autocapitalize="none" spellcheck="false" />
         </div>
 
+        <div class="input-group">
+          <label for="input-api-proxy">API proxy base URL (GitHub Pages)</label>
+          <input id="input-api-proxy" type="url" placeholder="https://your-worker.workers.dev" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="input-group">
+          <label for="input-api-proxy-secret">Proxy shared secret (optional)</label>
+          <input id="input-api-proxy-secret" type="password" placeholder="If your worker requires X-Proxy-Secret" autocomplete="new-password" spellcheck="false" />
+        </div>
+
         <div id="key-status" class="key-status"></div>
 
         <div class="provider-info" id="provider-info"></div>

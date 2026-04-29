@@ -21,7 +21,7 @@ You can scan as many drawings as you like — they all share the same world!
 - Multiple characters coexisting in the same scene
 - Sound effects (ambient world sounds, spawn sounds, footsteps)
 - Child-friendly UI with large buttons and bright colors
-- Fully client-side — API key stored in browser sessionStorage only
+- Fully client-side — API key and optional proxy settings stored in the browser for this site only
 - Works on desktop and mobile browsers
 
 ## Running Locally
@@ -57,9 +57,17 @@ GitHub Actions runs `npm run build` on every push and pull request to `main`, an
 1. Get an API key from [platform.openai.com](https://platform.openai.com/api-keys)
 2. In the game, click the gear icon (settings)
 3. Paste your API key and click Save
-4. That's it! Drawings will now be processed with AI
+4. Drawings are processed with AI when a key is configured
 
-The API key is stored in your browser tab's sessionStorage and only sent to OpenAI's API.
+The API key is stored in your browser (localStorage for this site) and sent to the AI provider when you scan a drawing.
+
+### GitHub Pages and CORS
+
+When the game is served from **another website** (for example GitHub Pages), the browser enforces **CORS**. **OpenAI’s API does not include the headers needed for browser `fetch`**, so requests appear to fail with a CORS error (you may still see HTTP **401** in the network tab if the key is wrong).
+
+**Fix:** deploy the small proxy in `workers/openai-cors-proxy.js` (for example as a **Cloudflare Worker** — see `workers/README.md`), then in Settings set **API proxy base URL** to that worker’s origin (for example `https://your-name.workers.dev`, no path). The game will call the worker, which forwards to OpenAI and returns CORS-safe responses. Optional **Proxy shared secret** matches the worker’s `PROXY_SHARED_SECRET` if you set one.
+
+For **local** testing (`localhost`), calling OpenAI directly usually works because the failure mode differs; the proxy is mainly for static hosting.
 
 ## Deploying to GitHub Pages
 

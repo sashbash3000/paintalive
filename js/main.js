@@ -13,11 +13,14 @@ import {
   setApiKey,
   getProvider,
   setProvider,
-  getProviders,
   getCustomBaseUrl,
   setCustomBaseUrl,
   getCustomVisionModel,
   setCustomVisionModel,
+  getApiProxyBaseUrl,
+  setApiProxyBaseUrl,
+  getApiProxySecret,
+  setApiProxySecret,
   processDrawing,
   prepareSprite,
 } from './ai.js';
@@ -55,6 +58,8 @@ const customFields = document.getElementById('custom-fields');
 const inputBaseUrl = document.getElementById('input-base-url');
 const inputVisionModel = document.getElementById('input-vision-model');
 const inputApiKey = document.getElementById('input-api-key');
+const inputApiProxy = document.getElementById('input-api-proxy');
+const inputApiProxySecret = document.getElementById('input-api-proxy-secret');
 const keyStatus = document.getElementById('key-status');
 const providerInfo = document.getElementById('provider-info');
 const btnSaveKey = document.getElementById('btn-save-key');
@@ -134,11 +139,11 @@ function goBackToGallery() {
 
 const PROVIDER_HINTS = {
   openai:
-    'Get a key at <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a>. Supports vision analysis + AI image generation (best quality).',
+    'Get a key at <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a>. Supports vision + image generation. <strong>Static hosting (e.g. GitHub Pages):</strong> OpenAI blocks browser CORS — deploy the proxy in the repo’s <code>workers/</code> folder and paste its URL under <strong>API proxy base URL</strong>.',
   openrouter:
-    'Get a key at <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai</a>. Uses Gemini Flash for vision. Drawing is extracted from the photo (no AI image generation).',
+    'Get a key at <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai</a>. Uses Gemini Flash for vision; no AI image generation. Use the proxy URL if you see CORS errors on static hosting.',
   custom:
-    'Enter any OpenAI-compatible API endpoint. Must support vision (image input in chat completions).',
+    'Enter any OpenAI-compatible API with vision support. Use <strong>API proxy base URL</strong> if the API does not allow browser CORS.',
 };
 
 function openSettings() {
@@ -146,6 +151,8 @@ function openSettings() {
 
   selectProvider.value = getProvider();
   inputApiKey.value = getApiKey();
+  inputApiProxy.value = getApiProxyBaseUrl();
+  inputApiProxySecret.value = getApiProxySecret();
   inputBaseUrl.value = getCustomBaseUrl();
   inputVisionModel.value = getCustomVisionModel();
 
@@ -181,6 +188,8 @@ btnSaveKey.addEventListener('click', () => {
 
   setProvider(providerId);
   setApiKey(key);
+  setApiProxyBaseUrl(inputApiProxy.value);
+  setApiProxySecret(inputApiProxySecret.value);
 
   if (providerId === 'custom') {
     setCustomBaseUrl(inputBaseUrl.value);
