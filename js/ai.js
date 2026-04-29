@@ -11,17 +11,28 @@ const VISION_MODEL = 'gpt-4o-mini';
 const IMAGE_MODEL = 'gpt-image-1';
 const IMAGE_FALLBACK_MODEL = 'dall-e-3';
 
-const STORAGE_KEY = 'drawing-alive-api-key';
+const OPENAI_API_BASE = 'https://api.openai.com/v1';
+const SESSION_STORAGE_KEY = 'drawing-alive-api-key';
+const LEGACY_STORAGE_KEY = 'drawing-alive-api-key';
+const FALLBACK_DESCRIPTION = 'a friendly colorful creature';
+
+let apiKeyFallback = '';
+
+removeLegacyStoredApiKey();
 
 export function getApiKey() {
-  return localStorage.getItem(STORAGE_KEY) || '';
+  return readSessionApiKey() || apiKeyFallback;
 }
 
 export function setApiKey(key) {
-  if (key) {
-    localStorage.setItem(STORAGE_KEY, key.trim());
+  const trimmedKey = key.trim();
+  removeLegacyStoredApiKey();
+  apiKeyFallback = trimmedKey;
+
+  if (trimmedKey) {
+    writeSessionApiKey(trimmedKey);
   } else {
-    localStorage.removeItem(STORAGE_KEY);
+    removeSessionApiKey();
   }
 }
 
@@ -52,18 +63,12 @@ export async function processDrawing(photoCanvas, onStatus) {
 async function analyzeDrawing(photoCanvas, apiKey) {
   const dataUrl = photoCanvas.toDataURL('image/jpeg', 0.8);
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: VISION_MODEL,
-      messages: [
-        {
-          role: 'system',
-          content: `You are helping a children's game. A child has drawn something on paper and photographed it. 
+  const data = await requestOpenAi('/chat/completions', apiKey, {
+    model: VISION_MODEL,
+    messages: [
+      {
+        role: 'system',
+        content: `You are helping a children's game. A child has drawn something on paper and photographed it.
 Describe ONLY what the child drew (the subject), in a short phrase suitable as an image generation prompt.
 Focus on: what animal/creature/object it is, its colors, any distinctive features.
 Keep it to 1-2 sentences. Be specific but concise.
@@ -71,28 +76,21 @@ Example outputs:
 - "A green turtle with a big smile and a spotted shell"
 - "A purple dinosaur with tiny arms and sharp teeth"
 - "A yellow cat with stripes and a long curly tail"
-If you cannot identify any drawing, respond with "a friendly colorful creature".`,
-        },
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: 'What did the child draw? Describe it briefly.' },
-            { type: 'image_url', image_url: { url: dataUrl } },
-          ],
-        },
-      ],
-      max_tokens: 100,
-      temperature: 0.3,
-    }),
+If you cannot identify any drawing, respond with "${FALLBACK_DESCRIPTION}".`,
+      },
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: 'What did the child draw? Describe it briefly.' },
+          { type: 'image_url', image_url: { url: dataUrl } },
+        ],
+      },
+    ],
+    max_tokens: 100,
+    temperature: 0.3,
   });
 
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error?.message || `Vision API error: ${response.status}`);
-  }
-
-  const data = await response.json();
-  return data.choices?.[0]?.message?.content?.trim() || 'a friendly colorful creature';
+  return sanitizeDescription(data.choices?.[0]?.message?.content) || FALLBACK_DESCRIPTION;
 }
 
 async function generateSprite(description, apiKey) {
@@ -112,28 +110,15 @@ No background, no ground, no shadows, no extra objects. Just the character.`;
 }
 
 async function generateWithGptImage(prompt, apiKey) {
-  const response = await fetch('https://api.openai.com/v1/images/generations', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: IMAGE_MODEL,
-      prompt,
-      n: 1,
-      size: '1024x1024',
-      background: 'transparent',
-      output_format: 'png',
-    }),
+  const data = await requestOpenAi('/images/generations', apiKey, {
+    model: IMAGE_MODEL,
+    prompt,
+    n: 1,
+    size: '1024x1024',
+    background: 'transparent',
+    output_format: 'png',
   });
 
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error?.message || `Image API error: ${response.status}`);
-  }
-
-  const data = await response.json();
   const b64 = data.data?.[0]?.b64_json;
   if (!b64) throw new Error('No image data returned');
 
@@ -141,27 +126,14 @@ async function generateWithGptImage(prompt, apiKey) {
 }
 
 async function generateWithDalle3(prompt, apiKey) {
-  const response = await fetch('https://api.openai.com/v1/images/generations', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: IMAGE_FALLBACK_MODEL,
-      prompt: prompt + ' White background.',
-      n: 1,
-      size: '1024x1024',
-      response_format: 'b64_json',
-    }),
+  const data = await requestOpenAi('/images/generations', apiKey, {
+    model: IMAGE_FALLBACK_MODEL,
+    prompt: `${prompt} White background.`,
+    n: 1,
+    size: '1024x1024',
+    response_format: 'b64_json',
   });
 
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error?.message || `DALL-E API error: ${response.status}`);
-  }
-
-  const data = await response.json();
   const b64 = data.data?.[0]?.b64_json;
   if (!b64) throw new Error('No image data returned');
 
@@ -170,6 +142,66 @@ async function generateWithDalle3(prompt, apiKey) {
   // Remove white background since DALL-E 3 doesn't support transparency
   removeWhiteBackground(canvas);
   return canvas;
+}
+
+async function requestOpenAi(path, apiKey, payload) {
+  const response = await fetch(`${OPENAI_API_BASE}${path}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.error?.message || `OpenAI API error: ${response.status}`);
+  }
+
+  return data;
+}
+
+function removeLegacyStoredApiKey() {
+  try {
+    localStorage.removeItem(LEGACY_STORAGE_KEY);
+  } catch {
+    // Storage can be disabled by browser privacy settings.
+  }
+}
+
+function readSessionApiKey() {
+  try {
+    return sessionStorage.getItem(SESSION_STORAGE_KEY);
+  } catch {
+    // Storage can be disabled by browser privacy settings.
+  }
+  return '';
+}
+
+function writeSessionApiKey(value) {
+  try {
+    sessionStorage.setItem(SESSION_STORAGE_KEY, value);
+  } catch {
+    // Keep using the in-memory fallback for this tab.
+  }
+}
+
+function removeSessionApiKey() {
+  try {
+    sessionStorage.removeItem(SESSION_STORAGE_KEY);
+  } catch {
+    // Storage can be disabled by browser privacy settings.
+  }
+}
+
+function sanitizeDescription(description) {
+  return description
+    ?.replace(/[\u0000-\u001f\u007f]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 240);
 }
 
 function loadBase64Image(dataUrl) {

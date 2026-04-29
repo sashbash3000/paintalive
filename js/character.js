@@ -26,7 +26,7 @@ export default class Character {
     this.groundY = canvasH * GROUND_OFFSET;
 
     // position: start at random X, on the ground
-    this.x = Math.random() * (canvasW - this.w);
+    this.x = Math.random() * Math.max(0, canvasW - this.w);
     this.y = this.groundY - this.h;
 
     // velocity
@@ -44,6 +44,7 @@ export default class Character {
 
     // wander timer
     this.wanderTimeout = null;
+    this.idleTimeout = null;
     this.scheduleWander();
 
     // footstep timing
@@ -55,6 +56,8 @@ export default class Character {
   }
 
   scheduleWander() {
+    this.clearWanderTimers();
+
     const delay = WANDER_INTERVAL[0] + Math.random() * (WANDER_INTERVAL[1] - WANDER_INTERVAL[0]);
     this.wanderTimeout = setTimeout(() => {
       if (!this.alive) return;
@@ -62,7 +65,7 @@ export default class Character {
       const r = Math.random();
       if (r < 0.25) {
         this.vx = 0; // idle for a moment
-        setTimeout(() => {
+        this.idleTimeout = setTimeout(() => {
           if (!this.alive) return;
           this.direction = Math.random() < 0.5 ? 1 : -1;
           this.speed = WALK_SPEED_MIN + Math.random() * (WALK_SPEED_MAX - WALK_SPEED_MIN);
@@ -81,12 +84,19 @@ export default class Character {
     }, delay);
   }
 
+  clearWanderTimers() {
+    clearTimeout(this.wanderTimeout);
+    clearTimeout(this.idleTimeout);
+    this.wanderTimeout = null;
+    this.idleTimeout = null;
+  }
+
   resize(canvasW, canvasH) {
     this.canvasW = canvasW;
     this.canvasH = canvasH;
     this.groundY = canvasH * GROUND_OFFSET;
     this.y = this.groundY - this.h;
-    this.x = Math.min(this.x, canvasW - this.w);
+    this.x = Math.max(0, Math.min(this.x, Math.max(0, canvasW - this.w)));
   }
 
   update(dt, now) {
@@ -101,7 +111,7 @@ export default class Character {
       this.direction = 1;
       this.vx = this.speed;
     } else if (this.x + this.w > this.canvasW) {
-      this.x = this.canvasW - this.w;
+      this.x = Math.max(0, this.canvasW - this.w);
       this.direction = -1;
       this.vx = -this.speed;
     }
@@ -234,7 +244,7 @@ export default class Character {
 
   destroy() {
     this.alive = false;
-    clearTimeout(this.wanderTimeout);
+    this.clearWanderTimers();
   }
 }
 
