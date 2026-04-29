@@ -6,6 +6,7 @@
 let audioCtx = null;
 let masterGain = null;
 let ambientNodes = [];
+let ambientTimers = [];
 let muted = false;
 let currentAmbientId = null;
 
@@ -53,7 +54,9 @@ export function stopAmbient() {
     try { n.stop?.(); } catch {}
     try { n.disconnect(); } catch {}
   });
+  ambientTimers.forEach(timerId => window.clearTimeout(timerId));
   ambientNodes = [];
+  ambientTimers = [];
   currentAmbientId = null;
 }
 
@@ -166,7 +169,7 @@ function scheduleBirdChirps() {
   osc.start(now);
   osc.stop(now + 0.2);
   ambientNodes.push(osc, gain);
-  setTimeout(() => scheduleBirdChirps(), 1500 + Math.random() * 4000);
+  scheduleAmbientTimer(scheduleBirdChirps, 1500 + Math.random() * 4000);
 }
 
 function ambientOcean() {
@@ -222,5 +225,13 @@ function scheduleCrickets() {
   osc.start(now);
   osc.stop(now + 0.05);
   ambientNodes.push(osc, gain);
-  setTimeout(() => scheduleCrickets(), 300 + Math.random() * 2000);
+  scheduleAmbientTimer(scheduleCrickets, 300 + Math.random() * 2000);
+}
+
+function scheduleAmbientTimer(callback, delay) {
+  const timerId = window.setTimeout(() => {
+    ambientTimers = ambientTimers.filter(id => id !== timerId);
+    callback();
+  }, delay);
+  ambientTimers.push(timerId);
 }

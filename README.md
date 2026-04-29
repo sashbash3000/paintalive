@@ -21,7 +21,7 @@ You can scan as many drawings as you like — they all share the same world!
 - Multiple characters coexisting in the same scene
 - Sound effects (ambient world sounds, spawn sounds, footsteps)
 - Child-friendly UI with large buttons and bright colors
-- Fully client-side — API key stored in browser localStorage only
+- Fully client-side — API key stored in browser sessionStorage only
 - Works on desktop and mobile browsers
 
 ## Running Locally
@@ -47,7 +47,7 @@ Then open `http://localhost:8000` in your browser.
 3. Paste your API key and click Save
 4. That's it! Drawings will now be processed with AI
 
-The API key is stored in your browser's localStorage and only sent to OpenAI's API.
+The API key is stored in your browser tab's sessionStorage and only sent to OpenAI's API.
 
 ## Deploying to GitHub Pages
 

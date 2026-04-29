@@ -13,12 +13,12 @@ export function extractCharacter(sourceCanvas, maxSize = 150) {
 
   // 1. Detect dominant background color (sample corners)
   const bgSamples = [
-    getPixel(data, sw, 5, 5),
-    getPixel(data, sw, sw - 5, 5),
-    getPixel(data, sw, 5, sh - 5),
-    getPixel(data, sw, sw - 5, sh - 5),
-    getPixel(data, sw, Math.floor(sw / 2), 5),
-    getPixel(data, sw, 5, Math.floor(sh / 2)),
+    getPixel(data, sw, 5, 5, sw, sh),
+    getPixel(data, sw, sw - 5, 5, sw, sh),
+    getPixel(data, sw, 5, sh - 5, sw, sh),
+    getPixel(data, sw, sw - 5, sh - 5, sw, sh),
+    getPixel(data, sw, Math.floor(sw / 2), 5, sw, sh),
+    getPixel(data, sw, 5, Math.floor(sh / 2), sw, sh),
   ];
   const avgBg = averageColor(bgSamples);
 
@@ -91,14 +91,24 @@ export function extractCharacter(sourceCanvas, maxSize = 150) {
   return finalCanvas;
 }
 
-function getPixel(data, w, x, y) {
-  const idx = (y * w + x) * 4;
+function getPixel(data, w, x, y, maxW, maxH) {
+  const safeX = Math.min(Math.max(x, 0), maxW - 1);
+  const safeY = Math.min(Math.max(y, 0), maxH - 1);
+  const idx = (safeY * w + safeX) * 4;
   return { r: data[idx], g: data[idx + 1], b: data[idx + 2] };
 }
 
 function averageColor(samples) {
-  let r = 0, g = 0, b = 0;
-  for (const s of samples) { r += s.r; g += s.g; b += s.b; }
+  let r = 0;
+  let g = 0;
+  let b = 0;
+
+  for (const s of samples) {
+    r += s.r;
+    g += s.g;
+    b += s.b;
+  }
+
   const n = samples.length;
   return { r: r / n, g: g / n, b: b / n };
 }

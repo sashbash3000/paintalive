@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="referrer" content="no-referrer" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://api.openai.com; img-src 'self' data: blob:; media-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'; script-src 'self'; style-src 'self'" />
   <title>Drawing Alive!</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
@@ -66,10 +68,10 @@
       <div class="modal-content settings-content">
         <h2>&#x2699;&#xFE0F; Settings</h2>
         <p class="settings-desc">To bring drawings to life with AI, enter an <strong>OpenAI API key</strong>.<br>
-        This is stored only in your browser and never sent anywhere except OpenAI.</p>
+        This stays in this browser tab and is never sent anywhere except OpenAI.</p>
         <div class="input-group">
           <label for="input-api-key">API Key</label>
-          <input id="input-api-key" type="password" placeholder="sk-..." autocomplete="off" spellcheck="false" />
+          <input id="input-api-key" type="password" placeholder="sk-..." autocomplete="new-password" autocapitalize="none" spellcheck="false" />
         </div>
         <div id="key-status" class="key-status"></div>
         <p class="settings-note">Without an API key, drawings will use basic image detection instead of AI.</p>

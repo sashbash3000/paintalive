@@ -118,7 +118,7 @@ function openSettings() {
   keyStatus.textContent = '';
   keyStatus.className = 'key-status';
   if (hasApiKey()) {
-    keyStatus.textContent = 'API key is configured';
+    keyStatus.textContent = 'API key is configured for this tab';
     keyStatus.classList.add('success');
   }
 }
@@ -136,7 +136,7 @@ btnSaveKey.addEventListener('click', () => {
   }
   setApiKey(key);
   if (key) {
-    keyStatus.textContent = 'Saved! AI mode is now active';
+    keyStatus.textContent = 'Saved for this tab. AI mode is now active.';
     keyStatus.className = 'key-status success';
   } else {
     keyStatus.textContent = 'Key removed. Using basic detection mode.';
@@ -185,6 +185,10 @@ function closeWebcam() {
 
 btnSnap.addEventListener('click', async () => {
   capturedCanvas = captureFrame();
+  if (!capturedCanvas) {
+    alert('Could not capture a camera frame. Please try again.');
+    return;
+  }
 
   // Show preview of the photo
   const previewCtx = webcamPreview.getContext('2d');
