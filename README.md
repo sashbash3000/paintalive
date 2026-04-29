@@ -40,6 +40,18 @@ npx serve .
 
 Then open `http://localhost:8000` in your browser.
 
+## JavaScript checks (CI and local)
+
+Formatting uses [Prettier](https://prettier.io/); syntax uses Node’s parse-only `node --check` on every file under `js/`.
+
+```bash
+npm ci
+npm run build        # format check + syntax check (same as prebuild)
+npm run format       # auto-format all js/**/*.js
+```
+
+GitHub Actions runs `npm run build` on every push and pull request to `main`, and deploys GitHub Pages only after that step succeeds (configure the repository’s Pages source to **GitHub Actions**).
+
 ## Setting Up AI Mode
 
 1. Get an API key from [platform.openai.com](https://platform.openai.com/api-keys)
@@ -51,7 +63,7 @@ The API key is stored in your browser tab's sessionStorage and only sent to Open
 
 ## Deploying to GitHub Pages
 
-Push to a branch, then enable GitHub Pages in the repository settings pointing to that branch. The site is fully static.
+Use the **GitHub Actions** workflow in `.github/workflows/pages.yml`: it verifies JavaScript, then publishes the static site. In the repository settings, set Pages **Build and deployment** source to **GitHub Actions** (not “Deploy from a branch”).
 
 ## Tech Stack
 
@@ -60,7 +72,7 @@ Push to a branch, then enable GitHub Pages in the repository settings pointing t
 - Web Audio API for procedural sounds
 - MediaDevices API for webcam access
 - OpenAI API (GPT-4o-mini Vision + gpt-image-1 / DALL-E 3 fallback)
-- Zero npm dependencies — just static files
+- Dev-only npm tooling (Prettier + CI scripts); the game itself is plain static files
 
 ## Tips for Best Results
 

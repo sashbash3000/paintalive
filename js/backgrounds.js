@@ -4,12 +4,12 @@
  */
 
 const BACKGROUNDS = [
-  { id: 'jungle',      name: 'Jungle',        painter: paintJungle },
-  { id: 'ocean',       name: 'Ocean',          painter: paintOcean },
-  { id: 'desert',      name: 'Desert',         painter: paintDesert },
-  { id: 'arctic',      name: 'Arctic',         painter: paintArctic },
-  { id: 'space',       name: 'Outer Space',    painter: paintSpace },
-  { id: 'savanna',     name: 'Savanna Sunset', painter: paintSavanna },
+  { id: 'jungle', name: 'Jungle', painter: paintJungle },
+  { id: 'ocean', name: 'Ocean', painter: paintOcean },
+  { id: 'desert', name: 'Desert', painter: paintDesert },
+  { id: 'arctic', name: 'Arctic', painter: paintArctic },
+  { id: 'space', name: 'Outer Space', painter: paintSpace },
+  { id: 'savanna', name: 'Savanna Sunset', painter: paintSavanna },
 ];
 
 export function getBackgrounds() {
@@ -17,7 +17,7 @@ export function getBackgrounds() {
 }
 
 export function paintBackground(id, ctx, w, h) {
-  const bg = BACKGROUNDS.find(b => b.id === id);
+  const bg = BACKGROUNDS.find((b) => b.id === id);
   if (bg) bg.painter(ctx, w, h);
 }
 
@@ -60,7 +60,7 @@ function paintJungle(ctx, w, h) {
   ctx.fillStyle = '#4caf50';
   for (let i = 0; i < 20; i++) {
     const lx = Math.random() * w;
-    const ly = h * 0.80 + Math.random() * h * 0.15;
+    const ly = h * 0.8 + Math.random() * h * 0.15;
     drawLeaf(ctx, lx, ly, 8 + Math.random() * 12);
   }
 
@@ -112,7 +112,7 @@ function paintOcean(ctx, w, h) {
   ctx.beginPath();
   ctx.moveTo(0, h * 0.92);
   for (let x = 0; x <= w; x += 20) {
-    ctx.lineTo(x, h * 0.90 + Math.sin(x * 0.03) * 8);
+    ctx.lineTo(x, h * 0.9 + Math.sin(x * 0.03) * 8);
   }
   ctx.lineTo(w, h);
   ctx.lineTo(0, h);
@@ -199,7 +199,7 @@ function paintArctic(ctx, w, h) {
   ctx.beginPath();
   ctx.moveTo(0, h * 0.6);
   ctx.bezierCurveTo(w * 0.2, h * 0.48, w * 0.35, h * 0.56, w * 0.5, h * 0.52);
-  ctx.bezierCurveTo(w * 0.7, h * 0.46, w * 0.85, h * 0.55, w, h * 0.50);
+  ctx.bezierCurveTo(w * 0.7, h * 0.46, w * 0.85, h * 0.55, w, h * 0.5);
   ctx.lineTo(w, h);
   ctx.lineTo(0, h);
   ctx.fill();

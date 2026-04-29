@@ -5,12 +5,12 @@
 
 import { playFootstep } from './audio.js';
 
-const GRAVITY = 600;          // px/s^2
-const GROUND_OFFSET = 0.82;   // fraction of canvas height where ground is
+const GRAVITY = 600; // px/s^2
+const GROUND_OFFSET = 0.82; // fraction of canvas height where ground is
 const WALK_SPEED_MIN = 30;
 const WALK_SPEED_MAX = 80;
-const LEG_CYCLE_SPEED = 8;    // radians/sec
-const BOB_AMOUNT = 3;         // pixels
+const LEG_CYCLE_SPEED = 8; // radians/sec
+const BOB_AMOUNT = 3; // pixels
 const WANDER_INTERVAL = [2000, 6000]; // ms range before changing direction
 const FOOTSTEP_INTERVAL = 400; // ms between footstep sounds
 
@@ -39,7 +39,7 @@ export default class Character {
     // animation state
     this.legPhase = Math.random() * Math.PI * 2;
     this.alive = true;
-    this.spawnTimer = 0;    // for spawn pop-in animation
+    this.spawnTimer = 0; // for spawn pop-in animation
     this.scaleAnim = 0;
 
     // wander timer
@@ -65,13 +65,16 @@ export default class Character {
       const r = Math.random();
       if (r < 0.25) {
         this.vx = 0; // idle for a moment
-        this.idleTimeout = setTimeout(() => {
-          if (!this.alive) return;
-          this.direction = Math.random() < 0.5 ? 1 : -1;
-          this.speed = WALK_SPEED_MIN + Math.random() * (WALK_SPEED_MAX - WALK_SPEED_MIN);
-          this.vx = this.direction * this.speed;
-          this.scheduleWander();
-        }, 800 + Math.random() * 1500);
+        this.idleTimeout = setTimeout(
+          () => {
+            if (!this.alive) return;
+            this.direction = Math.random() < 0.5 ? 1 : -1;
+            this.speed = WALK_SPEED_MIN + Math.random() * (WALK_SPEED_MAX - WALK_SPEED_MIN);
+            this.vx = this.direction * this.speed;
+            this.scheduleWander();
+          },
+          800 + Math.random() * 1500
+        );
       } else if (r < 0.6) {
         this.direction *= -1;
         this.vx = this.direction * this.speed;
@@ -229,7 +232,7 @@ export default class Character {
     ctx.lineCap = 'round';
 
     for (let leg = 0; leg < 2; leg++) {
-      const hipX = (leg === 0 ? -legSpread : legSpread);
+      const hipX = leg === 0 ? -legSpread : legSpread;
       ctx.beginPath();
       ctx.moveTo(hipX, 0);
       ctx.lineTo(hipX, legLen);

@@ -32,7 +32,7 @@ export function captureFrame() {
 
 export function stopCamera() {
   if (stream) {
-    stream.getTracks().forEach(t => t.stop());
+    stream.getTracks().forEach((t) => t.stop());
     stream = null;
   }
   const video = videoEl();

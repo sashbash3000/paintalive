@@ -167,7 +167,7 @@ async function analyzeDrawing(photoCanvas, apiKey, config) {
 
   const headers = {
     'Content-Type': 'application/json',
-    'Authorization': config.authHeader(apiKey),
+    Authorization: config.authHeader(apiKey),
     ...config.extraHeaders(),
   };
 
@@ -202,7 +202,10 @@ If you cannot identify any drawing, respond with "${FALLBACK_DESCRIPTION}".`,
         {
           role: 'user',
           content: [
-            { type: 'text', text: 'Describe this child\'s drawing in precise visual detail. Focus on what makes it look unique — the colors, style, proportions, and quirky features of THIS specif[...]
+            {
+              type: 'text',
+              text: "Describe this child's drawing in precise visual detail. Focus on what makes it look unique — the colors, style, proportions, and quirky features of THIS specific drawing.",
+            },
             { type: 'image_url', image_url: { url: dataUrl } },
           ],
         },
@@ -211,6 +214,11 @@ If you cannot identify any drawing, respond with "${FALLBACK_DESCRIPTION}".`,
       temperature: 0.3,
     }),
   });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error?.message || `Vision API error: ${response.status}`);
+  }
 
   const data = await response.json();
   return sanitizeDescription(data.choices?.[0]?.message?.content) || FALLBACK_DESCRIPTION;
@@ -256,7 +264,7 @@ async function generateWithGptImage(prompt, apiKey, config) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': config.authHeader(apiKey),
+      Authorization: config.authHeader(apiKey),
       ...config.extraHeaders(),
     },
     body: JSON.stringify({
@@ -268,6 +276,11 @@ async function generateWithGptImage(prompt, apiKey, config) {
       output_format: 'png',
     }),
   });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error?.message || `Image API error: ${response.status}`);
+  }
 
   const data = await response.json();
   const b64 = data.data?.[0]?.b64_json;
@@ -282,7 +295,7 @@ async function generateWithDalle3(prompt, apiKey, config) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': config.authHeader(apiKey),
+      Authorization: config.authHeader(apiKey),
       ...config.extraHeaders(),
     },
     body: JSON.stringify({
@@ -361,7 +374,10 @@ export function prepareSprite(canvas, maxSize = 150) {
   const w = canvas.width;
   const h = canvas.height;
 
-  let minX = w, minY = h, maxX = 0, maxY = 0;
+  let minX = w,
+    minY = h,
+    maxX = 0,
+    maxY = 0;
   let hasContent = false;
 
   for (let y = 0; y < h; y++) {
