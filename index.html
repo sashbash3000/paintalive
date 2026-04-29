@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="referrer" content="no-referrer" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://api.openai.com https://openrouter.ai https://*.openrouter.ai https://*; img-src 'self' data: blob:; media-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'; script-src 'self'; style-src 'self'" />
+  <title>Drawing Alive!</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- SCREEN 1: Title / Background Selection -->
+    <div id="screen-title" class="screen active">
+      <h1 class="title">Drawing Alive!</h1>
+      <p class="subtitle">Pick a world for your drawings to explore!</p>
+      <div id="bg-gallery" class="gallery"></div>
+    </div>
+
+    <!-- SCREEN 2: Game View -->
+    <div id="screen-game" class="screen">
+      <canvas id="game-canvas"></canvas>
+      <div id="game-ui">
+        <button id="btn-scan" class="btn btn-scan" title="Scan a drawing">
+          <span class="btn-icon">&#x1F4F7;</span>
+          <span class="btn-label">Scan Drawing</span>
+        </button>
+        <button id="btn-back" class="btn btn-back" title="Change background">
+          <span class="btn-icon">&#x1F30D;</span>
+          <span class="btn-label">Change World</span>
+        </button>
+        <button id="btn-sound" class="btn btn-sound" title="Toggle sound">
+          <span class="btn-icon" id="sound-icon">&#x1F50A;</span>
+        </button>
+        <button id="btn-settings" class="btn btn-settings" title="Settings">
+          <span class="btn-icon">&#x2699;&#xFE0F;</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- MODAL: Webcam Capture -->
+    <div id="modal-webcam" class="modal hidden">
+      <div class="modal-content">
+        <h2 id="webcam-title">Show your drawing!</h2>
+        <p id="webcam-subtitle">Hold your drawing in front of the camera and press <strong>Snap!</strong></p>
+        <div class="webcam-container">
+          <video id="webcam-video" autoplay playsinline></video>
+          <canvas id="webcam-preview" class="hidden"></canvas>
+          <div id="ai-loading" class="ai-loading hidden">
+            <div class="spinner"></div>
+            <p id="ai-status">Looking at your drawing...</p>
+          </div>
+          <div id="ai-result" class="ai-result hidden">
+            <canvas id="ai-sprite-preview"></canvas>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button id="btn-snap" class="btn btn-snap">Snap!</button>
+          <label id="btn-upload" class="btn btn-upload" tabindex="0">
+            <span class="btn-icon">&#x1F4C1;</span> Upload Image
+            <input id="file-input" type="file" accept="image/*" hidden />
+          </label>
+          <button id="btn-retake" class="btn btn-retake hidden">Try Again</button>
+          <button id="btn-use" class="btn btn-use hidden">Add to World!</button>
+          <button id="btn-cancel-cam" class="btn btn-cancel">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: Settings (API Provider) -->
+    <div id="modal-settings" class="modal hidden">
+      <div class="modal-content settings-content">
+        <h2>&#x2699;&#xFE0F; Settings</h2>
+        <p class="settings-desc">Connect an AI service to bring drawings to life!<br>
+        Your key is stored only in your browser.</p>
+
+        <div class="input-group">
+          <label for="select-provider">AI Provider</label>
+          <select id="select-provider">
+            <option value="openai">OpenAI</option>
+            <option value="openrouter">OpenRouter (many models, one key)</option>
+            <option value="custom">Custom OpenAI-compatible API</option>
+          </select>
+        </div>
+
+        <div id="custom-fields" class="custom-fields hidden">
+          <div class="input-group">
+            <label for="input-base-url">Base URL</label>
+            <input id="input-base-url" type="url" placeholder="https://api.example.com/v1" autocomplete="off" spellcheck="false" />
+          </div>
+          <div class="input-group">
+            <label for="input-vision-model">Vision Model Name</label>
+            <input id="input-vision-model" type="text" placeholder="gpt-4o-mini" autocomplete="off" spellcheck="false" />
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label for="input-api-key">API Key</label>
+          <input id="input-api-key" type="password" placeholder="sk-..." autocomplete="new-password" autocapitalize="none" spellcheck="false" />
+        </div>
+
+        <div id="key-status" class="key-status"></div>
+
+        <div class="provider-info" id="provider-info"></div>
+
+        <p class="settings-note">Without an API key, drawings use basic image detection (works best with dark markers on white paper).</p>
+        <div class="modal-actions">
+          <button id="btn-save-key" class="btn btn-use">Save</button>
+          <button id="btn-close-settings" class="btn btn-cancel">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

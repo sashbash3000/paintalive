@@ -1,0 +1,14 @@
+{
+  "name": "paintalive",
+  "private": true,
+  "scripts": {
+    "format": "prettier --write \"js/**/*.js\"",
+    "format:check": "prettier --check \"js/**/*.js\"",
+    "syntax:check": "node scripts/check-js-syntax.mjs",
+    "prebuild": "npm run format:check && npm run syntax:check",
+    "build": "npm run prebuild"
+  },
+  "devDependencies": {
+    "prettier": "^3.5.3"
+  }
+}
