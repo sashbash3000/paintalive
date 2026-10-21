@@ -1,14 +1,19 @@
 {
-  "name": "paintalive",
+  "name": "paint-zoo",
+  "version": "1.0.0",
   "private": true,
+  "description": "Kids paint animals on paper, photograph them, and watch them come alive in a shared world.",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
   "scripts": {
-    "format": "prettier --write \"js/**/*.js\"",
-    "format:check": "prettier --check \"js/**/*.js\"",
-    "syntax:check": "node scripts/check-js-syntax.mjs",
-    "prebuild": "npm run format:check && npm run syntax:check",
-    "build": "npm run prebuild"
+    "dev": "concurrently -n api,web -c blue,green \"npm run dev -w backend\" \"npm run dev -w frontend\"",
+    "build": "npm run build -w frontend",
+    "start": "npm start -w backend"
   },
   "devDependencies": {
-    "prettier": "^3.5.3"
-  }
+    "concurrently": "^9.1.0"
+  },
+  "license": "MIT"
 }
