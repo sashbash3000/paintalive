@@ -1,82 +1,61 @@
-# Drawing Alive!
+# 🎨 Paint Zoo
 
-A browser-based game where children draw animals (or anything!) on paper, scan them with a webcam, and watch them come alive inside a colorful scene.
+Kids paint an animal on real paper, take a photo of it with the app, and the
+painting is cut out and comes alive in a world: a jungle, a farm or the ocean.
+Every new painting joins the others, so over time the world fills up with
+self-painted animals walking, hopping, flying and swimming around.
 
-## How to Play
+## How it works
 
-1. **Pick a World** — Choose from Jungle, Ocean, Desert, Arctic, Outer Space, or Savanna Sunset
-2. **Draw Something** — Grab paper and a dark pen/marker, draw an animal or creature
-3. **Scan It** — Click the camera button, hold your drawing up to the webcam, and snap a photo
-4. **Watch It Walk!** — Your drawing appears in the scene with animated legs and starts exploring
+1. **Pick a world** on the start screen (Jungle, Farm, Ocean).
+2. Tap **📷 Add a painting** and take a photo of the paper.
+3. The app cuts out the painting automatically: it removes the paper, shadows
+   and the table, and fills in the inside of outline drawings. If something is
+   missing or there's too much paper, use the **Less / More** slider.
+4. Give it a name, choose how it moves (walk, hop, fly, swim) and which way it
+   is looking, then send it into the world. It appears with a little sparkle.
+5. Tap an animal in the world and it jumps and shows its name.
+   The 🧹 button lets a grown-up remove animals.
 
-You can scan as many drawings as you like — they all share the same world!
+Animals are stored on the server, so you can show the world on a TV or laptop
+(⛶ full screen) and add paintings from a phone at the same time. New animals
+appear on the big screen within a few seconds.
 
-## Features
+## Running it
 
-- **AI-Powered Drawing Recognition** — GPT-4o Vision analyzes photos of drawings, then GPT Image generates clean cartoon character sprites (requires OpenAI API key)
-- **Fallback Mode** — Works without an API key using basic pixel-based background removal
-- 6 procedurally-drawn background scenes with unique ambient sounds
-- Webcam capture with child-friendly snap-and-go workflow
-- Procedural walking animation (legs, bobbing, wandering behavior)
-- Multiple characters coexisting in the same scene
-- Sound effects (ambient world sounds, spawn sounds, footsteps)
-- Child-friendly UI with large buttons and bright colors
-- Fully client-side — API key stored in browser sessionStorage only
-- Works on desktop and mobile browsers
-
-## Running Locally
-
-No build step required. Serve the files with any static HTTP server:
+Needs Node.js 18 or newer.
 
 ```bash
-# Python
-python3 -m http.server 8000
-
-# Node.js (npx)
-npx serve .
-
-# Or simply open index.html in a browser that supports ES modules
+npm install
+npm run dev
 ```
 
-Then open `http://localhost:8000` in your browser.
+Open http://localhost:5173. The start screen shows the address to open on a
+phone in the same Wi-Fi (e.g. `http://192.168.1.20:5173`).
 
-## JavaScript checks (CI and local)
-
-Formatting uses [Prettier](https://prettier.io/); syntax uses Node’s parse-only `node --check` on every file under `js/`.
+For a permanent setup, build the frontend once and let the backend serve it:
 
 ```bash
-npm ci
-npm run build        # format check + syntax check (same as prebuild)
-npm run format       # auto-format all js/**/*.js
+npm run build
+npm start
 ```
 
-GitHub Actions runs `npm run build` on every push and pull request to `main`, and deploys GitHub Pages only after that step succeeds (configure the repository’s Pages source to **GitHub Actions**).
+Then everything runs on port 3000 (`http://<computer-ip>:3000`).
+Set `API_PORT` to use another port and `DATA_DIR` to store the paintings
+somewhere else (default: `backend/data/`).
 
-## Setting Up AI Mode
+## Project structure
 
-1. Get an API key from [platform.openai.com](https://platform.openai.com/api-keys)
-2. In the game, click the gear icon (settings)
-3. Paste your API key and click Save
-4. That's it! Drawings will now be processed with AI
+```
+backend/src/app.js          Small Express server: stores the cut-out PNGs + an index file
+frontend/src/game/cutout.js Turns a photo of a painting into a transparent cut-out
+frontend/src/game/scenes.js The worlds (drawn in code) and where animals can be in each
+frontend/src/game/world.js  Animation: walking, hopping, flying, swimming, tapping
+frontend/src/views/         Start screen, world screen, add-a-painting screen
+```
 
-The API key is stored in your browser tab's sessionStorage and only sent to OpenAI's API.
+### Adding a new world
 
-## Deploying to GitHub Pages
-
-Use the **GitHub Actions** workflow in `.github/workflows/pages.yml`: it verifies JavaScript, then publishes the static site. In the repository settings, set Pages **Build and deployment** source to **GitHub Actions** (not “Deploy from a branch”).
-
-## Tech Stack
-
-- Vanilla HTML5 / CSS3 / JavaScript (ES Modules)
-- Canvas 2D API for rendering
-- Web Audio API for procedural sounds
-- MediaDevices API for webcam access
-- OpenAI API (GPT-4o-mini Vision + gpt-image-1 / DALL-E 3 fallback)
-- Dev-only npm tooling (Prettier + CI scripts); the game itself is plain static files
-
-## Tips for Best Results
-
-- Use **white paper** and a **dark marker or pen** for drawings
-- Keep the background behind the paper plain (avoid busy patterns)
-- Good lighting helps the camera capture clearly
-- Drawings with a clear outline work best
+Add an entry to `SCENES` in `frontend/src/game/scenes.js` (background drawing,
+zones for ground/sky/water, allowed movements) and add its id to `SCENES` in
+`backend/src/app.js`.
